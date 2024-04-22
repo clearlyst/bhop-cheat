@@ -14,15 +14,12 @@ static const char* key_back[4] = { "-w", "-s", "-a", "-d" };
 static const char* key_back_for[4] = { "ej", "mj", "lj", "lej" };
 static const char* edge_jump_for[3] = { "lj", "mj", "lej" };
 static const char* detect_chat_for[3] = { "jb", "eb", "ps" };
-static const char* tabs[] = { "indicators","positions" };
 static const char* indicators[14] = { "jb", "ej", "lj", "eb", "mj", "sh", "ps", "al", "ad", "as", "bb", "msl", "so", "null" };
 const char* font_flags[] = { "no hinting","no autohint","light hinting","mono hinting","bold","italic","no antialiasing","load color","bitmap","dropshadow","outline" };
 const char* fnt_tab[] = { "main indicator font", "sub indicator font", "esp font", "sub esp font", "scene font", "sub scene font" };
-static const char* hitboxes[] = { "head","neck","chest","pelvis" };
 static const char* materials[] = { "regular", "flat", "crystal", "pearlescent", "reverse pearlescent", "fog", "damascus", "model" };
 static const char* chams_overlay_types[] = { "glow", "outline", "metallic", "snow" };
 static const char* flags[7] = { "armour", "money", "flashed", "scoped","reloading", "defusing", "rescuing" };
-static const char* weapon_type[2] = { "text", "icon" };
 static const char* outline_type[2] = { "outter", "inner" };
 static const char* line_type[3] = { "top", "center", "bottom" };
 
@@ -415,7 +412,12 @@ void visuals() {
                         ImGui::SliderFloat("size", &c::visuals::players::out_of_view::size, 0.0f, 50.0f, ("%.2f"));
                         ImGui::SliderFloat("distance", &c::visuals::players::out_of_view::distance, 0.0f, 300.0f, ("%.2f"));
                     }
-
+                    ImGui::Checkbox("emitted sound", &c::visuals::players::emitted_sound::enable);
+                    if (c::visuals::players::emitted_sound::enable)
+                    {
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##soundscolor", c::visuals::players::colors::sounds, w_alpha);
+                    }
                 }
 
                 ImGui::PopStyleVar();
@@ -645,6 +647,12 @@ void visuals() {
                     ImGui::ColorEdit4("##particles color", c::visuals::particles_color, w_alpha);
                 }
                 ImGui::Checkbox("full bright", &c::visuals::fullbright);
+                ImGui::Checkbox("ragdoll player", &c::visuals::ragdoll);
+                if (c::visuals::ragdoll)
+                {
+                    ImGui::Text("style");
+                    ImGui::Combo("##ragdoll", &c::visuals::ragdoll_style, "none\0from us\0to us\0to sky\0");
+                }
 
                 ImGui::Separator();
 
@@ -814,6 +822,7 @@ void miscellaneous() {
                     }
 
                     ImGui::Checkbox("take off##velocity", &c::movement::indicators::velocity::takeoff);
+                    ImGui::Checkbox("disable takeoff on ground##velocity", &c::movement::indicators::velocity::disable_takeoff_on_ground);
                     ImGui::Checkbox("custom color##velocity", &c::movement::indicators::velocity::custom_color);
                 }
                 ImGui::Checkbox("stamina", &c::movement::indicators::stamina::enable);
@@ -836,6 +845,7 @@ void miscellaneous() {
                     }
 
                     ImGui::Checkbox("take off##stamina", &c::movement::indicators::stamina::takeoff);
+                    ImGui::Checkbox("disable takeoff on ground##stamina", &c::movement::indicators::stamina::disable_takeoff_on_ground);
                     ImGui::Checkbox("custom color##stamina", &c::movement::indicators::stamina::custom_color);
                 }
                 ImGui::Checkbox("key strokes", &c::movement::indicators::keys::enable);
@@ -877,10 +887,40 @@ void miscellaneous() {
 
                 ImGui::PopStyleVar();
 
-            }}
+            }},
+                    ctab{ "graphs", []()
+            {
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0));
+
+                ImGui::Checkbox("velocity", &c::movement::indicators::graphs::velocity::enable);
+                if (c::movement::indicators::graphs::velocity::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##velocity graph", c::movement::indicators::graphs::velocity::color, no_alpha);
+                    ImGui::Checkbox("draw velocity", &c::movement::indicators::graphs::velocity::draw_velocity);
+                    ImGui::Checkbox("draw edgebug (wip)", &c::movement::indicators::graphs::velocity::draw_edgebug);
+                    ImGui::Checkbox("draw jumpbug (wip)", &c::movement::indicators::graphs::velocity::draw_jumpbug);
+                    ImGui::Checkbox("draw pixelsurf (wip)", &c::movement::indicators::graphs::velocity::draw_pixelsurf);
+                }
+                ImGui::Checkbox("stamina", &c::movement::indicators::graphs::stamina::enable);
+                if (c::movement::indicators::graphs::stamina::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##stamina graph", c::movement::indicators::graphs::stamina::color, no_alpha);
+                }
+                if (c::movement::indicators::graphs::velocity::enable || c::movement::indicators::graphs::stamina::enable)
+                {
+                    ImGui::Checkbox("fade on graphs", &c::movement::indicators::graphs::fade);
+                    ImGui::SliderFloat("size of graphs", &c::movement::indicators::graphs::size, 0.50f, 3.00f, ("%.2f"));
+                    ImGui::SliderInt("position", &c::movement::indicators::position, 0, 500, "%d");
+                }
+
+                ImGui::PopStyleVar();
+
+            }},
             };
 
-            menu::render_tab("misc_tab", misc_tabs, 2U, &menu::indicators_tab, style.Colors[ImGuiCol_TabHovered]);
+            menu::render_tab("misc_tab", misc_tabs, 3U, &menu::indicators_tab, style.Colors[ImGuiCol_TabHovered]);
         }
         ImGui::EndChild();
     }
@@ -914,10 +954,6 @@ void miscellaneous() {
                 ImGui::PushItemWidth(-1);
                /* if (ImGui::InputTextWithHint("##config.file", "create new...", buffer, sizeof(buffer), ImGuiInputTextFlags_EnterReturnsTrue)) {
                     c::create_file(buffer);
-
-                    if (interfaces::engine->is_in_game()) {
-                        interfaces::chat_element->chatprintf("#ozungaware#_print_created");
-                    }
 
                     memset(buffer, 0, sizeof(buffer)); // clear the buffer
                 }*/

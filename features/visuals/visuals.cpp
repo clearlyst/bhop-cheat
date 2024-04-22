@@ -115,6 +115,47 @@ void features::visuals::particles()
 	}
 }
 
+void features::visuals::entities_ragdoll()
+{
+	if (!c::visuals::ragdoll)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
+	{
+		return;
+	}
+
+	for (int i = 1; i <= interfaces::ent_list->get_highest_index(); i++)
+	{
+		auto entity = reinterpret_cast<entity_t*>(interfaces::ent_list->get_client_entity(i));
+
+		if (!entity)
+			continue;
+
+		if (entity->dormant())
+			continue;
+
+		const auto client_class = entity->client_class();
+
+		if (!client_class)
+			continue;
+
+		if (client_class->class_id != ccsragdoll)
+			continue;
+
+
+		switch (c::visuals::ragdoll_style)
+		{
+			case 0: entity->force_ragdoll() *= 0, entity->ragdoll_velocity() *= 0; break;
+			case 1: entity->force_ragdoll() *= INT_MAX, entity->ragdoll_velocity() *= 0; break;
+			case 2: entity->force_ragdoll() *= INT_MIN, entity->ragdoll_velocity() *= 0; break;
+			case 3: entity->force_ragdoll().z *= INT_MAX, entity->ragdoll_velocity().z *= INT_MAX;  break;
+		}
+	}
+}
+
 void features::visuals::skybox_changer(client_frame_stage_t stage)
 {
 	static auto load_skybox = reinterpret_cast<void(__fastcall*)(const char*)>(find_pattern("engine.dll", "55 8B EC 81 EC ? ? ? ? 56 57 8B F9 C7 45"));

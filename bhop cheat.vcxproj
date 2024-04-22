@@ -152,6 +152,7 @@
     <ClCompile Include="features\skins\parser.cpp" />
     <ClCompile Include="features\skins\skins.cpp" />
     <ClCompile Include="features\visuals\chams.cpp" />
+    <ClCompile Include="features\visuals\dormant.cpp" />
     <ClCompile Include="features\visuals\glow.cpp" />
     <ClCompile Include="features\visuals\grenade_prediction.cpp" />
     <ClCompile Include="features\visuals\player.cpp" />
@@ -343,6 +344,7 @@
     <ClInclude Include="sdk\interfaces\ibaseclientdll.hpp" />
     <ClInclude Include="sdk\interfaces\iclientstate.hpp" />
     <ClInclude Include="sdk\interfaces\iconsole.hpp" />
+    <ClInclude Include="sdk\interfaces\ienginesound.hpp" />
     <ClInclude Include="sdk\interfaces\ilocalize.hpp" />
     <ClInclude Include="sdk\interfaces\imaterialsystem.hpp" />
     <ClInclude Include="sdk\interfaces\imdlcache.hpp" />

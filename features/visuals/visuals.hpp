@@ -20,12 +20,53 @@ struct bbox_t {
 };
 
 namespace features::visuals {
-	inline int tick;
-	inline int igonre_ticks = 0;
-	inline int velocity_old = 0;
-	inline vec3_t origin_old(0, 0, 0);
-
 	bool get_playerbox(player_t* entity, bbox_t& in);
+
+	void get_update_sounds();
+
+	namespace dormant_system
+	{
+		void start();
+		void finish();
+
+		void adjust_player_begin(player_t* player, int i);
+		void adjust_player_finish();
+		void setup_adjust_player(player_t* player, SndInfo_t& sound);
+		
+		bool is_valid_sound(SndInfo_t& sound);
+		
+		struct SoundPlayer {
+			void override(SndInfo_t& sound) {
+				m_iIndex = sound.m_nSoundSource;
+				m_vecOrigin = *sound.m_pOrigin;
+				m_iReceiveTime = GetTickCount();
+			}
+		
+			int m_iIndex = 0;
+			int m_iReceiveTime = 0;
+			vec3_t m_vecOrigin = vec3_t(0, 0, 0);
+			vec3_t m_vecLastOrigin = vec3_t(0, 0, 0);
+		
+			/* Restore data */
+			int m_nFlags = 0;
+			int playerindex = 0;
+			vec3_t m_vecAbsOrigin = vec3_t(0, 0, 0);
+			bool m_bDormant = false;
+		} inline m_cSoundPlayers[64];
+		
+		inline CUtlVector<SndInfo_t> m_utlvecSoundBuffer;
+		inline std::vector<SoundPlayer> m_arRestorePlayers;
+		inline std::vector< std::pair<vec3_t, int> > restore_sound;
+	}
+
+	struct SoundInfo_t {
+		int guid;
+		float soundTime;
+		float alpha;
+		vec3_t soundPos;
+	};
+
+	inline std::map<int, std::vector<SoundInfo_t>> m_sound_list;
 
 	namespace player 
 	{
@@ -43,6 +84,7 @@ namespace features::visuals {
 		void draw_flags(player_t* entity, bbox_t bbox, color_t color);
 		void draw_bottom_bar(player_t* entity, bbox_t bbox, color_t ammo_bar, color_t health_text, color_t weapon_icon, color_t weapon_text, color_t ammo_text, color_t distance, color_t ammo_bar_outline);
 		void draw_outoffov(player_t* entity, color_t color);
+		void draw_sounds();
 	}
 
 	namespace glow {
@@ -50,9 +92,7 @@ namespace features::visuals {
 	}
 
 	void particles();
-
-	void fog();
-	void shadow();
+	void entities_ragdoll();
 	void skybox_changer(client_frame_stage_t stage);
 	void flashalpha();
 	void nosmoke();

@@ -26,6 +26,7 @@
 #include "interfaces/iv_model_render.hpp"
 #include "interfaces/iv_effects.hpp"
 #include "interfaces/ipanel.hpp"
+#include "interfaces/ienginesound.hpp"
 #include "structs/usercmd.hpp"
 #include "netvars/netvars.hpp"
 #include "structs/weaponinfo.hpp"
@@ -112,7 +113,7 @@ namespace interfaces {
 	inline i_render_view* render_view = nullptr;
 	inline i_game_event_manager2* event_manager = nullptr;
 	inline i_physics_surface_props* surface_props = nullptr;
-	inline i_view_render_beams* render_beams = nullptr;
+	inline IViewRenderBeams* render_beams = nullptr;
 	inline glow_manager_t* glow_manager = nullptr;
 	inline iv_effects* effects = nullptr;
 	inline i_input* input = nullptr;
@@ -124,7 +125,7 @@ namespace interfaces {
 	inline i_steam_friends* steam_friend = nullptr;
 	inline i_steam_utils* steam_utils = nullptr;
 
-	inline void* engine_sound = nullptr;
+	inline i_engine_sound* engine_sound = nullptr;
 	inline void* key_values_system = nullptr;
 
 	bool initialize();
@@ -416,7 +417,7 @@ public:
 
 	bool is_weapon() {
 		using original_fn = bool(__thiscall*)(entity_t*);
-		return (*(original_fn**)this)[165](this);
+		return (*(original_fn**)this)[166](this);
 	}
 
 	bool in_buyzone() {
@@ -520,16 +521,24 @@ public:
 		return static_cast<entity_t*>(interfaces::ent_list->get_client_entity(index));
 	}
 
-	NETVAR("DT_CSPlayer", "m_fFlags", flags, int)
+	NETVAR("C_CSPlayer", "m_flSpawnTime", spawn_time, float)
+
 	NETVAR("DT_BaseEntity", "m_hOwnerEntity", owner_handle, unsigned long)
-	NETVAR("DT_CSPlayer", "m_flSimulationTime", simulation_time, float)
-	NETVAR("DT_BasePlayer", "m_vecOrigin", origin, vec3_t)
-	NETVAR("DT_BasePlayer", "m_vecViewOffset[0]", view_offset, vec3_t)
 	NETVAR("DT_BaseEntity", "m_iTeamNum", team, int)
 	NETVAR("DT_BaseEntity", "m_bSpotted", spotted, bool)
+
+	NETVAR("DT_BasePlayer", "m_vecOrigin", origin, vec3_t)
+	NETVAR("DT_BasePlayer", "m_vecViewOffset[0]", view_offset, vec3_t)
+
+	NETVAR("DT_CSPlayer", "m_fFlags", flags, int)
+	NETVAR("DT_CSPlayer", "m_flSimulationTime", simulation_time, float)
 	NETVAR("DT_CSPlayer", "m_nSurvivalTeam", survival_team, int)
 	NETVAR("DT_CSPlayer", "m_flHealthShotBoostExpirationTime", health_boost_time, float)
 	NETVAR("DT_CSPlayer", "m_bHasDefuser", has_defuser, bool)
+
+	NETVAR("DT_CSRagdoll", "m_vecForce", force_ragdoll, vec3_t)
+	NETVAR("DT_CSRagdoll", "m_vecRagdollVelocity", ragdoll_velocity, vec3_t)
+
 	NETVAR("DT_PlantedC4", "m_flC4Blow", c4_blow_time, float)
 	NETVAR("DT_PlantedC4", "m_flDefuseCountDown", c4_defuse_countdown, float)
 	NETVAR("DT_PlantedC4", "m_hBombDefuser", c4_gets_defused, unsigned long)
@@ -1495,6 +1504,7 @@ public:
 
 namespace g {
 	inline player_t* local = nullptr;
+	inline vec3_t origin;
 	inline c_usercmd* cmd = nullptr;
 	inline int width, height = 0;
 	inline bool send_packet;

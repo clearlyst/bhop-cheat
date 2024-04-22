@@ -1,5 +1,6 @@
 #include "../sdk/sdk.hpp"
 
+
 bool interfaces::initialize() {
 	client = get_interface<i_base_client_dll, interface_type::index>("client.dll", "VClient018");
 	ent_list = get_interface<iv_client_entity_list, interface_type::index>("client.dll", "VClientEntityList003");
@@ -18,7 +19,7 @@ bool interfaces::initialize() {
 	trace_ray = get_interface<trace, interface_type::index>("engine.dll", "EngineTraceClient004");
 	game_movement = get_interface<CGameMovement, interface_type::index>("client.dll", "GameMovement001");
 	prediction = get_interface<IPrediction, interface_type::index>("client.dll", "VClientPrediction001");
-	engine_sound = get_interface<void*, interface_type::index>("engine.dll", "IEngineSoundClient003");
+	engine_sound = get_interface<i_engine_sound, interface_type::index>("engine.dll", "IEngineSoundClient003");
 	surface_props = get_interface<i_physics_surface_props, interface_type::index>("vphysics.dll", "VPhysicsSurfaceProps001");
 	mdl_cache = get_interface<i_mdl_cache, interface_type::index>("datacache.dll", "MDLCache004");
 	panorama = get_interface<i_panoramaui_engine, interface_type::index>("panorama.dll", "PanoramaUIEngine001");
@@ -32,7 +33,7 @@ bool interfaces::initialize() {
 	globals = **reinterpret_cast<c_global_vars_base***>((*reinterpret_cast<uintptr_t**>(client))[11] + 10);
 	device = **reinterpret_cast<IDirect3DDevice9***>(find_pattern(("shaderapidx9.dll"), ("A1 ? ? ? ? 50 8B 08 FF 51 0C")) + 1);
 	move_helper = **reinterpret_cast<IMoveHelper***>(find_pattern("client.dll", "8B 0D ? ? ? ? 8B 45 ? 51 8B D4 89 02 8B 01") + 2);
-	render_beams = *reinterpret_cast<i_view_render_beams**>((find_pattern("client.dll", "B9 ? ? ? ? A1 ? ? ? ? FF 10 A1 ? ? ? ? B9") + 1));
+	render_beams = *reinterpret_cast<IViewRenderBeams**>((find_pattern_2("client.dll", "A1 ? ? ? ? FF 10 A1 ? ? ? ? B9") + 1));
 	weapon_system = *reinterpret_cast<i_weapon_system**>(find_pattern("client.dll", "8B 35 ? ? ? ? FF 10 0F B7 C0") + 2);
 	glow_manager = reinterpret_cast<glow_manager_t*>(*reinterpret_cast<uintptr_t*>(find_pattern("client.dll", "0F 11 05 ? ? ? ? 83 C8 01 C7 05 ? ? ? ? 00 00 00 00") + 3));
 	chat_element = *reinterpret_cast<c_hud_chat**>(reinterpret_cast<uintptr_t>(client_mode) + *reinterpret_cast<uint8_t*>(find_pattern(("client.dll"), ("E8 ? ? ? ? 8B 4F ? 85 C9 74 06 51")) + 7));

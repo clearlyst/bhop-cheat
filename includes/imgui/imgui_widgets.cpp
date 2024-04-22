@@ -3205,6 +3205,7 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* p_dat
         return TempInputScalar(total_bb, id, label, data_type, p_data, format);
     }
 
+
     // Draw frame
     RenderNavHighlight(frame_bb, id);
     PushStyleColor(ImGuiCol_Border, GetColorU32(g.ActiveId == id ? ImGuiCol_ScrollbarGrabActive : g.HoveredId == id ? ImGuiCol_FrameBgHovered : ImGuiCol_Border));

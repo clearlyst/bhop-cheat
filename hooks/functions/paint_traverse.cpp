@@ -30,6 +30,8 @@ void __stdcall sdk::hooks::paint_traverse::paint_traverse(unsigned int panel, bo
 			features::movement::keys_indicator();
 			features::movement::stamina_indicator();
 			features::movement::velocity_indicator();
+			features::movement::stamina_graph_indicator();
+			features::movement::velocity_graph_indicator();
 		});
 
 		break;

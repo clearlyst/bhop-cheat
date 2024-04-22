@@ -15,6 +15,7 @@ void __stdcall sdk::hooks::frame_stage_notify::frame_stage_notify( int stage ) {
 		features::visuals::flashalpha();
 		features::visuals::skybox_changer(frame_render_start);
 		features::visuals::nosmoke();
+		features::visuals::entities_ragdoll();
 		backtrack.setup_records();
 	}
 	else if (stage == frame_render_end) {
@@ -26,8 +27,11 @@ void __stdcall sdk::hooks::frame_stage_notify::frame_stage_notify( int stage ) {
 		features::skins::gloves_changer();
 		features::skins::full_update();
 	}
+	else if (stage == frame_net_update_start) {
+	
+	}
 	else if (stage == frame_net_update_end) {
-
+		features::visuals::get_update_sounds();
 	}
 	else if (stage == frame_start)
 	{

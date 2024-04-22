@@ -25,6 +25,7 @@ bool __stdcall sdk::hooks::create_move::create_move(float sampletime, c_usercmd*
 	features::misc::fix_mouse_delta(cmd);
 	features::misc::clantag_spammer();
 	features::misc::checkpoint_system();
+	features::movement::graphs_data();
 
 	if (features::movement::should_edgebug && features::movement::should_duck)
 	{

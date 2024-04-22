@@ -31,6 +31,11 @@ namespace features::movement
 	void keys_indicator();
 	void add(std::string name, bool enabled, color_t clr);
 	void indicators();
+	void graphs_data();
+	void velocity_graph_indicator();
+	void stamina_graph_indicator();
+
+	inline ImVec2 graph_position;
 
 	struct indicator
 	{
@@ -38,5 +43,23 @@ namespace features::movement
 		float alpha;
 	};
 
+	struct velocity_data_t
+	{
+		int speed;
+		bool on_ground;
+		bool pixelsurfed;
+		bool jumpbugged;
+		bool edgebugged;
+	};
+
+	struct stamina_data_t
+	{
+		float stamina;
+		bool on_ground;
+	};
+
+	inline std::vector<velocity_data_t> velocity_data;
+	inline std::vector<stamina_data_t> stamina_data;
 	inline std::unordered_map<std::string, indicator> m_indicators;
+
 }

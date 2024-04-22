@@ -107,7 +107,7 @@ void features::visuals::player::run()
 	{
 		auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(i));
 
-		if (!entity || entity == g::local)
+		if (!entity || !entity->is_player() || entity == g::local)
 		{
 			continue;
 		}
@@ -173,6 +173,11 @@ void features::visuals::player::run()
 		if (c::visuals::players::out_of_view::enable)
 		{
 			draw_outoffov(entity, c::visuals::players::colors::custom ? out_of_view : check_on_see ? visible : invisible);
+		}
+
+		if (c::visuals::players::emitted_sound::enable)
+		{
+			draw_sounds();
 		}
 
 		bbox_t _box;
@@ -718,51 +723,99 @@ void features::visuals::player::draw_outoffov(player_t* entity, color_t color)
 		im_render.drawtrianglefilled((ImVec2&)points[0], (ImVec2&)points[1], (ImVec2&)points[2], color);
 	}
 }
- /*
-void rotate(std::array< vec2_t, 3 >& points, float rotation) {
-	const auto points_center = (points.at(0) + points.at(1) + points.at(2)) / 3;
-	for (auto& point : points) {
-		point -= points_center;
 
-		const auto temp_x = point.x;
-		const auto temp_y = point.y;
+void features::visuals::get_update_sounds() {
+	static CUtlVector<SndInfo_t> sounds;
 
-		const auto theta = math::deg2rad(rotation);
-		const auto c = cos(theta);
-		const auto s = sin(theta);
+	interfaces::engine_sound->GetActiveSounds(sounds);
 
-		point.x = temp_x * c - temp_y * s;
-		point.y = temp_x * s + temp_y * c;
+	if (!sounds.Count())
+		return;
 
-		point += points_center;
+	for (int i = 0; i < sounds.Count(); ++i) {
+		const auto& sound = sounds[i];
+
+		if (!sound.m_nSoundSource)
+			continue;
+
+		if (sound.m_nChannel != 4)
+			continue;
+
+		if (!sound.m_bUpdatePositions)
+			continue;
+
+		player_t* player = player_t::get_player_by_index(sound.m_nSoundSource);
+
+		if (!player)
+			continue;
+
+		if (player != g::local)
+			continue;
+
+		if (!player->is_alive() || !player->is_player() || player->dormant())
+			continue;
+
+		if (player->team() == g::local->team())
+			continue;
+
+		if (!sound.m_pOrigin)
+			continue;
+
+		auto& player_sound = m_sound_list[player->index()];
+		if (player_sound.size() > 0) {
+			bool should_break = false;
+			for (const auto& snd : player_sound) {
+				if (snd.guid == sound.m_nGuid) {
+					should_break = true;
+					break;
+				}
+			}
+
+			if (should_break)
+				continue;
+		}
+
+		auto& new_sound = player_sound.emplace_back();
+		new_sound.guid = sound.m_nGuid;
+		new_sound.soundPos = *sound.m_pOrigin;
+		new_sound.soundTime = interfaces::globals->realtime;
+		new_sound.alpha = 1.0f;
 	}
 }
 
-void features::visuals::oof_arrows(player_t* player) {
-	vec3_t screen_point;
+void features::visuals::player::draw_sounds() {
+	for (auto& [entIndex, sound] : m_sound_list) {
 
-	interfaces::debug_overlay->world_to_screen(player->origin(), screen_point);
-	if (screen_point.x < 0 || screen_point.y < 0 || screen_point.x > g::width || screen_point.y > g::height) {
-		vec3_t viewangles;
+		if (sound.empty())
+			continue;
 
-		interfaces::engine->get_view_angles(viewangles);
+		for (auto& info : sound) {
+			if (info.soundTime + 0.30f < interfaces::globals->realtime)
+				info.alpha -= interfaces::globals->frame_time * 1.0f;
 
-		const auto screen_center = vec2_t(g::width * .5f, g::height * .5f);
-		const auto angle_yaw_rad = math::deg2rad(viewangles.y - math::calc_angle(g::local->get_eye_pos(), player->get_hitbox_position(2)).y - 90);
+			if (info.alpha <= 0.0f)
+				continue;
 
-		int radius = c::visuals::oof_arrows_dist;
-		int size = c::visuals::oof_arrows_size;
+			float delta_time = interfaces::globals->realtime - info.soundTime;
 
-		const auto new_point_x = screen_center.x + ((((g::width - (size * 3)) * .5f) * (radius / 100.0f)) * cos(angle_yaw_rad)) + (int)(6.0f * (((float)size - 4.f) / 16.0f));
-		const auto new_point_y = screen_center.y + ((((g::height - (size * 3)) * .5f) * (radius / 100.0f)) * sin(angle_yaw_rad));
+			auto factor = delta_time / 0.30f;
 
-		std::array< vec2_t, 3 >points{ vec2_t(new_point_x - size, new_point_y - size),
-			vec2_t(new_point_x + size, new_point_y),
-			vec2_t(new_point_x - size, new_point_y + size) };
+			if (factor > 1.0f)
+				factor = 1.0f;
 
-		rotate(points, viewangles.y - math::calc_angle(g::local->get_eye_pos(), player->get_hitbox_position(2)).y - 90);
-		surface::draw_filled_triangle(points, player->visible() ? color(c::visuals::oof_arrows_clr[0] * 255, c::visuals::oof_arrows_clr[1] * 255, c::visuals::oof_arrows_clr[2] * 255, static_cast<float>(c::visuals::oof_arrows_clr[3] * fade.at(player->index()))) : color(c::visuals::oof_arrows_clr2[0] * 255, c::visuals::oof_arrows_clr2[1] * 255, c::visuals::oof_arrows_clr2[2] * 255, static_cast<float>(c::visuals::oof_arrows_clr2[3] * fade.at(player->index()))));
+			float radius = 30.0f * factor;
+
+			im_render.circle_filled_3d(info.soundPos, radius, color_t(c::visuals::players::colors::sounds[0], c::visuals::players::colors::sounds[1], c::visuals::players::colors::sounds[2], info.alpha));
+		}
+
+		while (!sound.empty())
+		{
+			auto& back = sound.back();
+
+			if (back.alpha <= 0.0f)
+				sound.pop_back();
+			else 
+				break;
+		}
 	}
-} 
-
-*/
+}

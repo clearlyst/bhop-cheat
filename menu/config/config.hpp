@@ -135,6 +135,28 @@ namespace c {
 		{
 			inline int position = 200;
 
+			namespace graphs
+			{
+				inline bool fade = true;
+				inline float size = 1.00f;
+
+				namespace velocity
+				{
+					inline bool enable = false;
+					inline bool draw_velocity = false;
+					inline bool draw_jumpbug = false;
+					inline bool draw_edgebug = false;
+					inline bool draw_pixelsurf = false;
+					inline float color[3]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
+				};
+
+				namespace stamina
+				{
+					inline bool enable = false;
+					inline float color[3]{ 166 / 255.0f, 143 / 255.0f, 242 / 255.0f };
+				};
+			};
+
 			namespace binds
 			{
 				inline bool enable = false;
@@ -153,6 +175,7 @@ namespace c {
 			namespace velocity
 			{
 				inline bool enable = true;
+				inline bool disable_takeoff_on_ground = true;
 				inline bool takeoff = true;
 				inline bool custom_color = true;
 
@@ -168,6 +191,7 @@ namespace c {
 			{
 				inline bool enable = true;
 				inline bool takeoff = true;
+				inline bool disable_takeoff_on_ground = true;
 				inline bool custom_color = true;
 				inline float color_1[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
 				inline float color_2[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
@@ -185,25 +209,6 @@ namespace c {
 				inline int position = 200;
 			};
 		};
-
-		inline bool stamina_graph = false;
-		inline float stamina_graph_color[3]{ 1.f, 1.f, 1.f };
-		inline int stamina_graph_offset = -700;
-		inline int stamina_graph_height = 100;
-		inline int stamina_graph_offset_x = 500;
-		inline int graph_fade = 1;
-		inline bool velocity_graph = false;
-		inline float velocity_graph_color[3]{ 1.f, 1.f, 1.f };
-		inline bool velocity_graph_show_landed_speed = false;
-		inline bool velocity_graph_show_edge_bug = false;
-		inline bool velocity_graph_show_jump_bug = false;
-		inline bool velocity_graph_show_pixel_surf = false;
-		inline float velocity_linewidth = 3.f;
-		inline int velocity_thickness = 1;
-		inline float velocity_height = 4.f;
-		inline int velocity_size = 185;
-		inline float graph_xscreenpos = 0.800f;
-		inline float velocity_tofade = 1.f;
 	}
 
 	namespace misc {
@@ -319,6 +324,7 @@ namespace c {
 				inline float distance[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
 				inline float dlight[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
 				inline float out_of_view[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+				inline float sounds[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
 			};
 
 			namespace fade
@@ -430,6 +436,11 @@ namespace c {
 				inline float thickness = 0.5f;
 			};
 
+			namespace emitted_sound
+			{
+				inline bool enable = true;
+			};
+
 			namespace dlight
 			{
 				inline bool enable = false;
@@ -471,6 +482,8 @@ namespace c {
 		inline bool dlight = false;
 		inline float dlight_radius = 25.0f;
 		inline float dlight_clr[3]{ 1.f, 1.f, 1.f };
+		inline bool ragdoll = false;
+		inline int ragdoll_style = 0;
 	}
 
 	namespace chams {

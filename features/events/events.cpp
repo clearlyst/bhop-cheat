@@ -1,6 +1,7 @@
 #include "events.hpp"
 #include "../misc/misc.hpp"
 #include "../../features/movement/movement.hpp"
+#include "../visuals/visuals.hpp"
 
 #pragma comment(lib, "Winmm.lib")
 

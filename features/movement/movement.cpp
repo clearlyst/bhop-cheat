@@ -758,7 +758,7 @@ void features::movement::jump_bug(c_usercmd* cmd)
 	if (!(prediction::flags & fl_onground) && g::local->flags() & fl_onground)
 	{
 		cmd->buttons |= in_duck;
-		cmd->buttons &= ~in_jump;		
+		cmd->buttons &= ~in_jump;
 	}
 
 	should[0] = (!(prediction::flags & fl_onground) && !(g::local->flags() & fl_onground) && !(should[3]) && !(should[6]) && (g::local->velocity().z > prediction::velocity.z) && g::local->move_type() != movetype_ladder && g::local->move_type() != movetype_noclip && g::local->move_type() != movetype_observer ? true : false);
@@ -973,13 +973,17 @@ void features::movement::velocity_indicator( )
 		return;
 	}
 
-	static bool didjumplast = false;
-	static int last_delta_velocity = 0;
-	static int last_velocity = 0;
-	static int pre_velocity = 0;
-	static int lasttick = 0;
+	static int last_speed = 0, last_jump_speed = 0, last_delta = 0;
+	static float last_update = 0.0f, take_off_time = 0.0f;
+	int current_speed = round(g::local->velocity().length_2d());
+	static bool last_onground = false;
+	bool current_onground = g::local->flags() & fl_onground;
 
-	int velocity = round(g::local->velocity().length_2d());
+	if (last_onground && !current_onground)
+	{
+		last_jump_speed = current_speed;
+		take_off_time = interfaces::globals->cur_time + (c::movement::indicators::velocity::disable_takeoff_on_ground ? 0.0f : 3.5f);
+	}
 
 	auto velocity_color = [](int velocity) -> color_t
 	{
@@ -998,50 +1002,35 @@ void features::movement::velocity_indicator( )
 	};
 
 	static float velocity_alpha = 0.0f;
-	velocity_alpha = 1.f * (float(velocity) / 255.f);
+	velocity_alpha = 1.f * (float(current_speed) / 255.f);
 
 	color_t color_1 = color_t(c::movement::indicators::velocity::color_1[0], c::movement::indicators::velocity::color_1[1], c::movement::indicators::velocity::color_1[2], c::movement::indicators::velocity::color_1[3]);
 	color_t color_2 = color_t(c::movement::indicators::velocity::color_2[0], c::movement::indicators::velocity::color_2[1], c::movement::indicators::velocity::color_2[2], c::movement::indicators::velocity::color_2[3]);
 
-	std::string velocity_str = std::to_string(velocity);
-	std::string place_holder_velocity = "";
+	last_delta = current_speed - last_speed;
 
-	last_delta_velocity = velocity - last_velocity;
+	const auto should_draw_takeoff = (!current_onground || (take_off_time > interfaces::globals->cur_time)) && c::movement::indicators::velocity::takeoff;
 
-	if (g::local->flags() & fl_onground)
+	std::string place_holder_velocity = std::to_string(current_speed);
+
+	if (current_onground || g::local->move_type() == movetype_ladder)
 	{
-		if (didjumplast)
-		{
-			didjumplast = false;
-		}
-
-		place_holder_velocity = velocity_str;
+		place_holder_velocity = std::to_string(current_speed);
 	}
-	else
+	else if (should_draw_takeoff)
 	{
-		if (!didjumplast)
-		{
-			pre_velocity = velocity;
-			didjumplast = true;
-		}
-
-		if (c::movement::indicators::velocity::takeoff)
-		{
-			place_holder_velocity = velocity_str + (" (") + std::to_string(pre_velocity) + (")");
-		}
-		else
-		{
-			place_holder_velocity = velocity_str;
-		}
+		place_holder_velocity += " (" + std::to_string(last_jump_speed) + ")";
 	}
 
-	im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position, c::fonts::indi_size, fonts::indicator_font, place_holder_velocity.c_str(), true, c::movement::indicators::velocity::custom_color ? interpolate(color_1, color_2, velocity_alpha) : velocity_color(last_delta_velocity), c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+	im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position, c::fonts::indi_size, fonts::indicator_font, place_holder_velocity.c_str(), true, c::movement::indicators::velocity::custom_color ? interpolate(color_1, color_2, velocity_alpha) : velocity_color(last_delta), c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 
-	if (fabs(interfaces::globals->tick_count - lasttick) > 5)
+	if (std::fabs(interfaces::globals->tick_count - last_update) > 5)
 	{
-		lasttick = interfaces::globals->tick_count;
-		last_velocity = velocity;
+		last_speed = current_speed;
+		last_update = interfaces::globals->tick_count + 0.05f;
 	}
+
+	last_onground = current_onground;
 }
 
 void features::movement::stamina_indicator( )
@@ -1061,8 +1050,7 @@ void features::movement::stamina_indicator( )
 		return;
 	}
 
-	static float last_speed = 0, last_jump_speed = 0;
-	static float last_vel_update = 0.0f;
+	static float last_speed = 0, last_jump_speed = 0, last_update = 0.0f, take_off_time = 0.0f;
 	float current_speed = g::local->stamina();
 	static bool last_onground = false;
 	bool current_onground = g::local->flags() & fl_onground;
@@ -1070,6 +1058,7 @@ void features::movement::stamina_indicator( )
 	if (last_onground && !current_onground)
 	{
 		last_jump_speed = current_speed;
+		take_off_time = interfaces::globals->cur_time + (c::movement::indicators::stamina::disable_takeoff_on_ground ? 0.0f : 3.5f);
 	}
 
 	std::string value_str;
@@ -1084,11 +1073,13 @@ void features::movement::stamina_indicator( )
 	ss1 << std::fixed << std::setprecision(1) << last_jump_speed;
 	std::string value_str2 = ss1.str();
 
+	const auto should_draw_takeoff = (!current_onground || (take_off_time > interfaces::globals->cur_time)) && c::movement::indicators::stamina::takeoff;
+
 	if (current_onground || g::local->move_type() == movetype_ladder)
 	{
 		str = value_str;
 	}
-	else if (c::movement::indicators::stamina::takeoff && !(current_onground))
+	else if (should_draw_takeoff)
 	{
 		str += " (" + value_str2 + ")";
 	}
@@ -1102,10 +1093,10 @@ void features::movement::stamina_indicator( )
 
 	im_render.text(g::width / 2, c::movement::indicators::velocity::enable ? (g::height / 2) + c::movement::indicators::position + c::fonts::indi_size : (g::height / 2) + c::movement::indicators::position, c::fonts::indi_size, fonts::indicator_font, str.c_str(), true, c::movement::indicators::stamina::custom_color ? interpolate(color_1, color_2, time) : color, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 
-	if (interfaces::globals->tick_count > last_vel_update)
+	if (interfaces::globals->tick_count > last_update)
 	{
 		last_speed = current_speed;
-		last_vel_update = interfaces::globals->tick_count + 0.05f;
+		last_update = interfaces::globals->tick_count + 0.05f;
 	}
 
 	last_onground = current_onground;
@@ -1195,12 +1186,12 @@ void features::movement::keys_indicator()
 
 	if (c::movement::indicators::keys::mouse_direction)
 	{
-		if (cmd->mouse_dx < 5.f)
+		if (cmd->mouse_dx < 10.f)
 		{
 			im_render.text(g::width / 2 - c::fonts::sub_indi_size, (c::movement::indicators::keys::position - 1) + (c::fonts::sub_indi_size * 2), c::fonts::sub_indi_size, fonts::sub_indicator_font, "<", true, color_t(1.f, 1.f, 1.f, 1.f), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
 		}
 
-		if (cmd->mouse_dx > 5.f)
+		if (cmd->mouse_dx > 10.f)
 		{
 			im_render.text(g::width / 2 + c::fonts::sub_indi_size, (c::movement::indicators::keys::position - 1) + (c::fonts::sub_indi_size * 2), c::fonts::sub_indi_size, fonts::sub_indicator_font, ">", true, color_t(1.f, 1.f, 1.f, 1.f), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
 		}
@@ -1339,47 +1330,47 @@ void features::movement::indicators()
 	/* jb 1  */
 	if (c::movement::indicators::binds::list[0])
 	{
-		add("jb", c::movement::jump_bug && menu::checkkey(c::movement::jump_bug_key, c::movement::jump_bug_key_s), interfaces::globals->tick_count - saved_tick[0] < 25 ? color_t(c::movement::indicators::binds::color_1[0], c::movement::indicators::binds::color_1[1], c::movement::indicators::binds::color_1[2]) : color_t(255, 255, 255));
+		add("jb", c::movement::jump_bug && menu::checkkey(c::movement::jump_bug_key, c::movement::jump_bug_key_s), interfaces::globals->tick_count - saved_tick[0] < 25 ? color_t(c::movement::indicators::binds::color_1[0], c::movement::indicators::binds::color_1[1], c::movement::indicators::binds::color_1[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* ej 2  */
 	if (c::movement::indicators::binds::list[1])
 	{
-		add("ej", c::movement::edge_jump && menu::checkkey(c::movement::edge_jump_key, c::movement::edge_jump_key_s), interfaces::globals->tick_count - saved_tick[1] < 25 ? color_t(c::movement::indicators::binds::color_1[0], c::movement::indicators::binds::color_1[1], c::movement::indicators::binds::color_1[2]) : color_t(255, 255, 255));
+		add("ej", c::movement::edge_jump && menu::checkkey(c::movement::edge_jump_key, c::movement::edge_jump_key_s), interfaces::globals->tick_count - saved_tick[1] < 25 ? color_t(c::movement::indicators::binds::color_1[0], c::movement::indicators::binds::color_1[1], c::movement::indicators::binds::color_1[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* lj 3  */
 	if (c::movement::indicators::binds::list[2])
 	{
-		add("lj", c::movement::long_jump && menu::checkkey(c::movement::long_jump_key, c::movement::long_jump_key_s), interfaces::globals->tick_count - saved_tick[2] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2]) : color_t(255, 255, 255));
+		add("lj", c::movement::long_jump && menu::checkkey(c::movement::long_jump_key, c::movement::long_jump_key_s), interfaces::globals->tick_count - saved_tick[2] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* eb 4  */
 	if (c::movement::indicators::binds::list[3])
 	{
-		add("eb", c::movement::edge_bug && menu::checkkey(c::movement::edge_bug_key, c::movement::edge_bug_key_s), interfaces::globals->tick_count - saved_tick[3] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2]) : color_t(255, 255, 255));
+		add("eb", c::movement::edge_bug && menu::checkkey(c::movement::edge_bug_key, c::movement::edge_bug_key_s), interfaces::globals->tick_count - saved_tick[3] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* mj 5 */
 	if (c::movement::indicators::binds::list[4])
 	{
-		add("mj", c::movement::mini_jump && menu::checkkey(c::movement::mini_jump_key, c::movement::mini_jump_key_s), interfaces::globals->tick_count - saved_tick[4] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2]) : color_t(255, 255, 255));
+		add("mj", c::movement::mini_jump && menu::checkkey(c::movement::mini_jump_key, c::movement::mini_jump_key_s), interfaces::globals->tick_count - saved_tick[4] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* sh 6 */
 	if (c::movement::indicators::binds::list[5])
 	{
-		add("sh", c::movement::delay_hop && menu::checkkey(c::movement::delay_hop_key, c::movement::delay_hop_key_s), interfaces::globals->tick_count - saved_tick[5] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2]) : color_t(255, 255, 255));
+		add("sh", c::movement::delay_hop && menu::checkkey(c::movement::delay_hop_key, c::movement::delay_hop_key_s), interfaces::globals->tick_count - saved_tick[5] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* ps 7 */
 	if (c::movement::indicators::binds::list[6])
 	{
-		add("ps", c::movement::pixel_surf && menu::checkkey(c::movement::pixel_surf_key, c::movement::pixel_surf_key_s), interfaces::globals->tick_count - saved_tick[6] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2]) : color_t(255, 255, 255));
+		add("ps", c::movement::pixel_surf && menu::checkkey(c::movement::pixel_surf_key, c::movement::pixel_surf_key_s), interfaces::globals->tick_count - saved_tick[6] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* al 8 */
 	if (c::movement::indicators::binds::list[7])
 	{
-		add("al", c::movement::auto_align, interfaces::globals->tick_count - saved_tick[7] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2]) : color_t(255, 255, 255));
+		add("al", c::movement::auto_align, interfaces::globals->tick_count - saved_tick[7] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* ad 9 */
 	if (c::movement::indicators::binds::list[8])
 	{
-		//add("ad", c::movement::auto_duck && menu::checkkey(c::movement::auto_duck_key, c::movement::auto_duck_key_s), interfaces::globals->tick_count - saved_tick[8] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2]) : color_t(255, 255, 255));
+		//add("ad", c::movement::auto_duck && menu::checkkey(c::movement::auto_duck_key, c::movement::auto_duck_key_s), interfaces::globals->tick_count - saved_tick[8] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
 	}
 	/* as 10 */
 	if (c::movement::indicators::binds::list[9])
@@ -1431,5 +1422,161 @@ void features::movement::indicators()
 
 			position += c::fonts::indi_size + c::movement::indicators::binds::sameline;
 		}
+	}
+}
+
+void features::movement::graphs_data()
+{
+	if (!c::movement::indicators::graphs::velocity::enable || !c::movement::indicators::graphs::stamina::enable) {
+		if (!velocity_data.empty())
+		{
+			velocity_data.clear();
+		}
+
+		if (!stamina_data.empty())
+		{
+			stamina_data.clear();
+		}
+
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game() || !g::local || !g::local->is_alive())
+	{
+		if (!velocity_data.empty())
+		{
+			velocity_data.clear();
+		}
+
+		if (!stamina_data.empty())
+		{
+			stamina_data.clear();
+		}
+
+		return;
+	}
+
+	if (velocity_data.size() > 255)
+	{
+		velocity_data.pop_back();
+	}
+
+	if (stamina_data.size() > 255)
+	{
+		stamina_data.pop_back();
+	}
+
+	graph_position = ImVec2(g::width / 2 + 255 * (c::movement::indicators::graphs::size / 2.f), (g::height / 2 + c::movement::indicators::position) - (c::fonts::indi_size + 5));
+
+	velocity_data_t current_velocity_data;
+	stamina_data_t current_stamina_data;
+
+	current_velocity_data.speed = g::local->velocity().length_2d();
+	current_velocity_data.on_ground = g::local->flags() & fl_onground;
+	current_stamina_data.stamina = g::local->stamina();
+	current_stamina_data.on_ground = g::local->flags() & fl_onground;
+
+	velocity_data.insert(velocity_data.begin(), current_velocity_data);
+	stamina_data.insert(stamina_data.begin(), current_stamina_data);
+}
+
+void features::movement::velocity_graph_indicator()
+{
+	if (!c::movement::indicators::graphs::velocity::enable)
+	{
+		if (!velocity_data.empty())
+		{
+			velocity_data.clear();
+		}
+
+
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game() || !g::local || !g::local->is_alive()) {
+		if (!velocity_data.empty())
+		{
+			velocity_data.clear();
+		}
+
+		return;
+	}
+
+	if (velocity_data.size() < 2)
+	{
+		return;
+	}
+
+	for (auto i = 0; i < velocity_data.size() - 1; i++)
+	{
+		const auto current = velocity_data[i];
+		const auto next = velocity_data[i + 1];
+
+		const auto clamped_current_speed = std::clamp(current.speed, 0, 450);
+		const auto clamped_next_speed = std::clamp(next.speed, 0, 450);
+
+		bool take_off = !current.on_ground && next.on_ground;
+
+		float current_speed = (clamped_current_speed * 75 / 320);
+		float next_speed = (clamped_next_speed * 75 / 320);
+
+		float max_val = (int)velocity_data.size() - 1;
+		float val = (int)i;
+		int alpha = c::movement::indicators::graphs::fade ? (fabs(max_val - fabs(val - max_val / 2) * 2.f)) : 255;
+
+		color_t color = color_t(c::movement::indicators::graphs::velocity::color[0], c::movement::indicators::graphs::velocity::color[1], c::movement::indicators::graphs::velocity::color[2], (alpha / 255.f));
+
+		im_render.drawline(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - current_speed, graph_position.x - i * c::movement::indicators::graphs::size, graph_position.y - next_speed, color, 1.0f);
+
+		if (take_off && c::movement::indicators::graphs::velocity::draw_velocity)
+		{
+			im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - next_speed - (c::fonts::sub_indi_size + 3), c::fonts::sub_indi_size, fonts::sub_indicator_font, std::to_string((int)round(current.speed)).c_str(), true, color_t(1.0f, 1.0f, 1.0f, (alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
+		}
+	}
+}
+
+void features::movement::stamina_graph_indicator()
+{
+	if (!c::movement::indicators::graphs::stamina::enable) {
+		if (!stamina_data.empty())
+		{
+			stamina_data.clear();
+		}
+
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game() || !g::local || !g::local->is_alive()) {
+		if (!stamina_data.empty())
+		{
+			stamina_data.clear();
+		}
+
+		return;
+	}
+
+	if (stamina_data.size() < 2)
+	{
+		return;
+	}
+
+	for (auto i = 0; i < stamina_data.size() - 1; i++)
+	{
+		const auto current = stamina_data[i];
+		const auto next = stamina_data[i + 1];
+
+		const auto clamped_current_speed = std::clamp(current.stamina, 0.0f, 35.0f);
+		const auto clamped_next_speed = std::clamp(next.stamina, 0.0f, 35.0f);
+
+		float current_speed = (clamped_current_speed * 25 / 35);
+		float next_speed = (clamped_next_speed * 25 / 35);
+
+		float max_val = (int)stamina_data.size() - 1;
+		float val = (int)i;
+		int alpha = c::movement::indicators::graphs::fade ? fabs(max_val - fabs(val - max_val / 2) * 2.f) : 255;
+
+		color_t color = color_t(c::movement::indicators::graphs::stamina::color[0], c::movement::indicators::graphs::stamina::color[1], c::movement::indicators::graphs::stamina::color[2], (alpha / 255.f));
+
+		im_render.drawline(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - current_speed, graph_position.x - i * c::movement::indicators::graphs::size, graph_position.y - next_speed, color, 1.0f);
 	}
 }

@@ -207,6 +207,9 @@
     <ClCompile Include="hooks\functions\particles_simulations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="features\visuals\dormant.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils\xor.hpp">
@@ -876,6 +879,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sdk\steam\steamuniverse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sdk\interfaces\ienginesound.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
