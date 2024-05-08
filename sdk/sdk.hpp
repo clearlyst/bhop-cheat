@@ -600,12 +600,12 @@ public:
 
 	float inaccuracy() {
 	    using original_fn = float(__thiscall*)(void*);
-	    return (*(original_fn**)this)[482](this);
+	    return (*(original_fn**)this)[483](this);
 	}
 
 	float get_spread() {
 		using original_fn = float(__thiscall*)(void*);
-		return (*(original_fn**)this)[452](this);
+		return (*(original_fn**)this)[453](this);
 	}
 
 	weapon_info_t* get_weapon_data() {
@@ -694,7 +694,7 @@ public:
 			return ("mp5sd");
 		case WEAPON_C4:
 			return ("c4");
-		case WEAPON_FRAG_GRENADE:
+		case WEAPON_HEGRENADE:
 			return ("he grenade");
 		case WEAPON_SMOKEGRENADE:
 			return ("smoke grenade");

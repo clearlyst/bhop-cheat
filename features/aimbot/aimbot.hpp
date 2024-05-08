@@ -7,6 +7,8 @@ namespace aimbot
 
 	c::aimbot::aimbot_value_t get_current_settings();
 
+	bool can_fire_checking();
+
 	bool hitscan(vec3_t eye_pos, player_t* player, vec3_t& ret_hitbox, float minimum_damage, float minimum_damage_visible);
 
 	player_t* get_best_target(c_usercmd* cmd);

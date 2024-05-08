@@ -804,105 +804,135 @@ bool features::movement::advanced_detection_for_edgebug(c_usercmd* cmd)
 
 void features::movement::edge_bug(c_usercmd* cmd)
 {
-	bool crouching;
-	bool strafing;
-	int original_buttons = cmd->buttons;
-	float original_forwardmove = cmd->forward_move;
-	float original_sidemove = cmd->side_move;
-	float forwardmove, sidemove;
-
-	if (!should_edgebug)
-	{
-		forwardmove = original_forwardmove;
-		sidemove = original_sidemove;
-	}
+	struct edgebug_data {
+		bool crouch;
+		bool strafe;
+		float forwardmove;
+		float sidemove;
+		float viewangle;
+		int ticks_left;
+	} detect_data;
 
 	if (!c::movement::edge_bug || !menu::checkkey(c::movement::edge_bug_key, c::movement::edge_bug_key_s))
 	{
+		detect_data.ticks_left = 0;
 		return;
 	}
 
 	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
 	{
+		detect_data.ticks_left = 0;
 		return;
 	}
 
 	if (!g::local || !g::local->is_alive())
 	{
+		detect_data.ticks_left = 0;
 		return;
 	}
 
 	if (g::local->move_type() == movetype_noclip || g::local->move_type() == movetype_ladder || g::local->move_type() == movetype_observer)
 	{
+		detect_data.ticks_left = 0;
 		return;
 	}
 
-	for (int type = 0; type < 2; type++)
-	{
-		prediction::restore_ent_to_predicted_frame(interfaces::prediction->m_nCommandsPredicted() - 1);
+	const float m_yaw = interfaces::console->get_convar("m_yaw")->get_float();
+	const float sensitivity = interfaces::console->get_convar("sensitivity")->get_float();
+	float yaw_delta = std::clamp(cmd->mouse_dx * m_yaw * sensitivity, -30.f, 30.f);
+	float original_forwardmove = cmd->forward_move;
+	float original_sidemove = cmd->side_move;
+	float original_yaw = cmd->view_angles.y;
+	detect_data.viewangle = original_yaw;
+	bool detected_edgebug = false;
 
-		if (type == 0)
+	if (!detect_data.ticks_left) {
+		for (int type = 0; type < (c::movement::edge_bug_asisst ? 4 : 2); type++)
 		{
-			crouching = false;
-			strafing = false;
-		}
-		else if (type == 1)
-		{
-			crouching = true;
-			strafing = false;
-		}
+			c_usercmd predictcmd = *cmd;
 
-		for (int ticks = 0; ticks <= 64; ticks++)
-		{
-			if (strafing)
+			if (type == 0)
 			{
-				cmd->forward_move = forwardmove;
-				cmd->side_move = sidemove;
+				detect_data.crouch = true;
+				predictcmd.buttons |= in_duck;
+				detect_data.strafe = false;
+				predictcmd.forward_move = 0.f;
+				predictcmd.side_move = 0.f;
 			}
-			else
+			else if (type == 1)
 			{
-				cmd->forward_move = 0.0f;
-				cmd->side_move = 0.0f;
+				detect_data.crouch = false;
+				predictcmd.buttons &= ~in_duck;
+				detect_data.strafe = false;
+				predictcmd.forward_move = 0.f;
+				predictcmd.side_move = 0.f;
 			}
-
-			if (crouching)
+			else if (type == 2)
 			{
-				cmd->buttons |= in_duck;
+				detect_data.crouch = true;
+				predictcmd.buttons |= in_duck;
+				detect_data.strafe = true;
+				predictcmd.forward_move = original_forwardmove;
+				predictcmd.side_move = original_sidemove;
 			}
-			else
+			else if (type == 3)
 			{
-				cmd->buttons &= ~in_duck;
-			}
-
-			prediction::start(cmd);
-			should_edgebug = advanced_detection_for_edgebug(cmd);
-			prediction::stop();
-
-			if (g::local->move_type() == movetype_ladder || g::local->move_type() == movetype_noclip || g::local->flags() & fl_onground)
-			{
-				break;
+				detect_data.crouch = false;
+				predictcmd.buttons &= ~in_duck;
+				detect_data.strafe = true;
+				predictcmd.forward_move = original_forwardmove;
+				predictcmd.side_move = original_sidemove;
 			}
 
-			if (should_edgebug)
+			prediction::restore_ent_to_predicted_frame(interfaces::prediction->m_nCommandsPredicted() - 1);
+
+			for (int ticks = 0; ticks < time_to_ticks(c::movement::edge_bug_time); ticks++)
 			{
-				if (strafing)
-				{
-					cmd->forward_move = forwardmove;
-					cmd->side_move = sidemove;
+				prediction::start(&predictcmd);
+				detected_edgebug = advanced_detection_for_edgebug(&predictcmd);
+				prediction::stop();
+
+				if (g::local->flags() & fl_onground || g::local->velocity().z > 0.f || g::local->velocity().length_2d() == 0.f || g::local->move_type() == movetype_ladder)
+					break;
+
+				if (detected_edgebug) {
+					detect_data.ticks_left = ticks;
+					detect_data.forwardmove = predictcmd.forward_move;
+					detect_data.sidemove = predictcmd.side_move;
+					break;
 				}
-
-				should_duck = crouching;
-
-				should[3] = should_edgebug;
-
-				return;
 			}
+
+			if (detect_data.ticks_left)
+				break;
 		}
 	}
 
-	cmd->forward_move = original_forwardmove;
-	cmd->side_move = original_sidemove;
-	cmd->buttons = original_buttons;
+	if (detect_data.ticks_left) {
+		if (detect_data.ticks_left == 1) {
+			if (c::movement::detection_printf[1]) {
+				features::notification::run("done edgebug", "#_print_edgebug", true, true, true);
+			}
+		}
+
+		if (detect_data.crouch) {
+			cmd->buttons |= in_duck;
+		}
+		else {
+			cmd->buttons &= ~in_duck;
+		}
+
+		if (detect_data.strafe) {
+			cmd->forward_move = detect_data.forwardmove;
+			cmd->side_move = detect_data.sidemove;
+		}
+		else {
+			cmd->forward_move = 0.f;
+			cmd->side_move = 0.f;
+		}
+
+		detect_data.ticks_left--;
+	}
 }
 
 void features::movement::auto_align(c_usercmd* cmd)
@@ -944,6 +974,30 @@ void features::movement::auto_align(c_usercmd* cmd)
 	{
 	
 	}
+}
+
+void features::movement::auto_pixelsurf(c_usercmd* cmd)
+{
+	if (!c::movement::pixel_surf || !menu::checkkey(c::movement::pixel_surf_key, c::movement::pixel_surf_key_s))
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	if (g::local->move_type() == movetype_noclip || g::local->move_type() == movetype_ladder || g::local->move_type() == movetype_observer)
+	{
+		return;
+	}
+
 }
 
 color_t interpolate(const color_t& first_color, const color_t& second_color, const float time)
@@ -1473,6 +1527,8 @@ void features::movement::graphs_data()
 
 	current_velocity_data.speed = g::local->velocity().length_2d();
 	current_velocity_data.on_ground = g::local->flags() & fl_onground;
+	current_velocity_data.jumpbugged = should[0];
+	current_velocity_data.was_in_prediction = prediction::using_prediction;
 	current_stamina_data.stamina = g::local->stamina();
 	current_stamina_data.on_ground = g::local->flags() & fl_onground;
 
@@ -1516,6 +1572,7 @@ void features::movement::velocity_graph_indicator()
 		const auto clamped_next_speed = std::clamp(next.speed, 0, 450);
 
 		bool take_off = !current.on_ground && next.on_ground;
+		const auto jump_bug_detected = !current.was_in_prediction && current.jumpbugged;
 
 		float current_speed = (clamped_current_speed * 75 / 320);
 		float next_speed = (clamped_next_speed * 75 / 320);
@@ -1531,6 +1588,11 @@ void features::movement::velocity_graph_indicator()
 		if (take_off && c::movement::indicators::graphs::velocity::draw_velocity)
 		{
 			im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - next_speed - (c::fonts::sub_indi_size + 3), c::fonts::sub_indi_size, fonts::sub_indicator_font, std::to_string((int)round(current.speed)).c_str(), true, color_t(1.0f, 1.0f, 1.0f, (alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
+		}
+
+		if (jump_bug_detected && c::movement::indicators::graphs::velocity::draw_jumpbug) 
+		{
+			im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - current_speed - (c::fonts::sub_indi_size + 5), c::fonts::sub_indi_size, fonts::sub_indicator_font, "jb", true, color_t(1.0f, 1.0f, 1.0f, (alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
 		}
 	}
 }

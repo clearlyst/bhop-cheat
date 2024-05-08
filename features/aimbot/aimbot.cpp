@@ -66,13 +66,45 @@ c::aimbot::aimbot_value_t aimbot::get_current_settings()
 	return general_settings;
 }
 
-bool can_fire(weapon_t* weap, c_usercmd* cmd) 
+bool aimbot::can_fire_checking()
 {
-	float flServerTime = (float)(g::local->get_tick_base() * interfaces::globals->interval_per_tick);
-
-	if (g::local->next_attack() < flServerTime)
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
 	{
-		return (weap->next_primary_attack() < flServerTime);
+		return false;
+	}
+
+	if (!g::local || !g::local->is_alive() || g::local->is_defusing())
+	{
+		return false;
+	}
+
+	if (menu::open)
+	{
+		return false;
+	}
+
+	auto weapon = g::local->active_weapon();
+
+	if (!weapon)
+	{
+		return false;
+	}
+
+	if (!weapon->isgun())
+	{
+		return false;
+	}
+
+	auto weapon_data = weapon->get_weapon_data();
+
+	if (!weapon_data)
+	{
+		return false;
+	}
+
+	if (g::local->next_attack() < interfaces::globals->cur_time)
+	{
+		return (weapon->next_primary_attack() < interfaces::globals->cur_time);
 	}
 
 	return false;
@@ -256,45 +288,15 @@ void aimbot::run(c_usercmd* cmd)
 		return;
 	}
 
-	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
-	{
-		return;
-	}
-
-	if (!g::local || !g::local->is_alive() || g::local->is_defusing())
-	{
-		return;
-	}
-
-	if (menu::open)
-	{
-		return;
-	}
-
-	auto weapon = g::local->active_weapon();
-
-	if (!weapon)
-	{
-		return;
-	}
-
-	auto weapon_data = weapon->get_weapon_data();
-
-	if (!weapon_data)
-	{
-		return;
-	}
-
 	if (current_settings.autopistol)
 	{
-		if (weapon->get_weapon_data()->m_iWeaponType == WEAPONTYPE_PISTOL)
+		if (g::local->active_weapon()->get_weapon_data()->m_iWeaponType == WEAPONTYPE_PISTOL)
 		{
-			const float server_time = g::local->get_tick_base() * interfaces::globals->interval_per_tick;
-			const float next_shot = weapon->next_primary_attack() - server_time;
+			const float next_shot = g::local->active_weapon()->next_primary_attack() - interfaces::globals->cur_time;
 
 			if (next_shot > 0)
 			{
-				if (weapon->item_definition_index() == WEAPON_REVOLVER)
+				if (g::local->active_weapon()->item_definition_index() == WEAPON_REVOLVER)
 				{
 					cmd->buttons &= ~in_attack2;
 				}
@@ -306,7 +308,7 @@ void aimbot::run(c_usercmd* cmd)
 		}
 	}
 
-	if (!(can_fire(weapon, cmd)))
+	if (!can_fire_checking())
 	{
 		return;
 	}

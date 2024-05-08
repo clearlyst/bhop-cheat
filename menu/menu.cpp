@@ -426,6 +426,44 @@ void visuals() {
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0));
 
+                ImGui::Checkbox("dropped weapon box (wip)", &c::visuals::players::dropped_weapon::box::enable);
+                if (c::visuals::players::dropped_weapon::box::enable)
+                {
+                    if (c::visuals::players::colors::custom)
+                    {
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##entity box color", c::visuals::players::colors::box, w_alpha);
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##entity outline box color", c::visuals::players::colors::box_outline, w_alpha);
+                    }
+                    ImGui::Text("box type");
+                    ImGui::Combo("##boxtype", &c::visuals::players::dropped_weapon::box::type, "filled\0corner");
+                    ImGui::Text("outline");
+                    ImGui::MultiCombo("##outlinetype", outline_type, c::visuals::players::dropped_weapon::box::outline, 2);
+
+                    if (c::visuals::players::dropped_weapon::box::type == 1)
+                    {
+                        ImGui::SliderFloat("corner lenght", &c::visuals::players::dropped_weapon::box::lenght, 1.55f, 20.0f, ("%.2f"));
+                    }
+                }
+                ImGui::Checkbox("dropped weapon name", &c::visuals::players::dropped_weapon::text::enable);
+                ImGui::Checkbox("dropped weapon icon", &c::visuals::players::dropped_weapon::icon::enable);
+                ImGui::Checkbox("dropped weapon ammo text", &c::visuals::players::dropped_weapon::ammo_text::enable);
+                if (c::visuals::players::dropped_weapon::text::enable || c::visuals::players::dropped_weapon::icon::enable || c::visuals::players::dropped_weapon::ammo_text::enable)
+                {
+                    ImGui::Text("dropped weapon text color");
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##dropped weapon color", c::visuals::players::dropped_weapon::color_text, w_alpha);
+                }
+                ImGui::Checkbox("dropped weapon ammo bar (wip)", &c::visuals::players::dropped_weapon::ammo_bar::enable);
+                ImGui::Checkbox("thrown grenade name", &c::visuals::players::thrown_grenade::text::enable);
+                ImGui::Checkbox("thrown grenade icon", &c::visuals::players::thrown_grenade::icon::enable);
+                if (c::visuals::players::thrown_grenade::text::enable || c::visuals::players::thrown_grenade::icon::enable)
+                {
+                    ImGui::Text("thrown grenade color");
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##thrown grenade color", c::visuals::players::thrown_grenade::color, w_alpha);
+                }
                 ImGui::PopStyleVar();
             }}
             };
@@ -453,13 +491,13 @@ void visuals() {
                 ImGui::Text("glow style");
                 ImGui::Combo("##glow type", &c::visuals::glow_style, "default\0pusling\0outline\0outline pulse\0");
             }
-            ImGui::Checkbox("enable dlight", &c::visuals::dlight);
-            if (c::visuals::dlight)
+            ImGui::Checkbox("enable dlight", &c::visuals::players::dlight::enable);
+            if (c::visuals::players::dlight::enable)
             {
                 ImGui::SameLine();
-                ImGui::ColorEdit4("##dlight color", c::visuals::dlight_clr, w_alpha);
+                ImGui::ColorEdit4("##dlight color", c::visuals::players::dlight::color, w_alpha);
 
-                ImGui::SliderFloat("radius", &c::visuals::dlight_radius, 25.0f, 200.0f, ("%.2f"));
+                ImGui::SliderFloat("radius", &c::visuals::players::dlight::radius, 25.0f, 200.0f, ("%.2f"));
             }
 
             ImGui::PopStyleVar();
@@ -545,6 +583,33 @@ void visuals() {
                     ImGui::Checkbox("mode", &c::misc::spectators_list_mode);
                 }
 
+                ImGui::Checkbox("debug information", &c::misc::debug_information::enable);
+                if (c::misc::debug_information::enable)
+                {
+                    ImGui::Checkbox("weapon ready to fire", &c::misc::debug_information::can_fire::enable);
+                    if (c::misc::debug_information::can_fire::enable)
+                    {
+                        ImGui::Text("ready to shoot");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##active color", c::misc::debug_information::can_fire::active_color, no_alpha);
+                        ImGui::Text("not ready to shoot");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##inactive color", c::misc::debug_information::can_fire::inactive_color, no_alpha);
+                    }
+                    ImGui::Checkbox("checkpoint system", &c::misc::debug_information::check_point_system::enable);
+                    if (ImGui::IsItemHovered()) {
+                        ImGui::SetTooltip("only if turn on practice binds");
+                    }
+                    if (c::misc::debug_information::check_point_system::enable)
+                    {
+                        ImGui::Text("saved point");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##active colorsp", c::misc::debug_information::check_point_system::active_color, no_alpha);
+                        ImGui::Text("succesfull teleported");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##inactive colortp", c::misc::debug_information::check_point_system::inactive_color, no_alpha);
+                    }
+                }
                 ImGui::Separator();
 
                 ImGui::Checkbox("change weapon sway scale", &c::misc::swayscale);
@@ -570,6 +635,13 @@ void visuals() {
                 ImGui::Checkbox("force crosshair", &c::misc::force_crosshair);
                 ImGui::Checkbox("sniper crosshair", &c::misc::sniper_crosshair);
                 ImGui::Checkbox("recoil crosshair", &c::misc::recoil_crosshair);
+                ImGui::Checkbox("spread circle", &c::misc::spread_circle::enable);
+                if (c::misc::spread_circle::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##spread circle color", c::misc::spread_circle::color, no_alpha);
+                }
+                ImGui::Checkbox("penetration reticle (wip)", &c::misc::penetration_reticle::enable);
 
                 ImGui::Separator();
 
@@ -597,77 +669,99 @@ void visuals() {
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0));
 
-                ImGui::Checkbox("fog modulation", &c::visuals::fog);
-                if (c::visuals::fog)
+                ImGui::Checkbox("fog modulation", &c::visuals::world::fog::enable);
+                if (c::visuals::world::fog::enable)
                 {
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("##fog color", c::visuals::fog_color, no_alpha);
-                    ImGui::SliderFloat("start", &c::visuals::fog_start, -5000.0f, 600.0f, ("%.2f"));
-                    ImGui::SliderFloat("end", &c::visuals::fog_end, 0, 5000.0f, ("%.2f"));
-                    ImGui::SliderFloat("density", &c::visuals::fog_density, 0.0f, 1.0f, ("%.2f"));
+                    ImGui::ColorEdit4("##fog color", c::visuals::world::fog::color, w_alpha);
+                    ImGui::SliderFloat("start", &c::visuals::world::fog::start, -5000.0f, 600.0f, ("%.2f"));
+                    ImGui::SliderFloat("end", &c::visuals::world::fog::end, 0, 5000.0f, ("%.2f"));
+                    ImGui::SliderFloat("density", &c::visuals::world::fog::density, 0.0f, 1.0f, ("%.2f"));
                 }
-                ImGui::Checkbox("shadow modulation", &c::visuals::shadow);
-                if (c::visuals::shadow)
+                ImGui::Checkbox("shadow modulation", &c::visuals::world::shadow::enable);
+                if (c::visuals::world::shadow::enable)
                 {
                     if (ImGui::IsItemHovered()) {
                         ImGui::SetTooltip("if you want restore shadows setup all on zero");
                     }
 
-                    ImGui::SliderFloat("rotation x", &c::visuals::shadow_x, -1000.0f, 1000.0f, ("%.2f"));
-                    ImGui::SliderFloat("rotation y", &c::visuals::shadow_y, -1000.0f, 1000.0f, ("%.2f"));
-                    ImGui::SliderFloat("rotation z", &c::visuals::shadow_z, -1000.0f, 1000.0f, ("%.2f"));
+                    ImGui::SliderFloat("rotation x", &c::visuals::world::shadow::x, -1000.0f, 1000.0f, ("%.2f"));
+                    ImGui::SliderFloat("rotation y", &c::visuals::world::shadow::y, -1000.0f, 1000.0f, ("%.2f"));
+                    ImGui::SliderFloat("rotation z", &c::visuals::world::shadow::z, -1000.0f, 1000.0f, ("%.2f"));
                 }
-                ImGui::Checkbox("world modulation", &c::visuals::world_modulate);
-                if (c::visuals::world_modulate)
+                ImGui::Checkbox("skybox modulation", &c::visuals::world::skybox::enable);
+                if (c::visuals::world::skybox::enable)
                 {
-                    ImGui::Text("world");
+                    ImGui::Text("change skybox");
+                    ImGui::Combo("##skybox", &c::visuals::world::skybox::style, "none\0baggage\0tibet\0embassy\0italy\0jungle\0nuke\0office\0daylight 1\0daylight 2\0daylight 3\0daylight 4\0cloudy 1\0night 1\0night 2\0day 2 hdr\0day 2\0dust\0rural\0venice\0vertigo hdr\0vertigo\0vertigo blue hdr\0vietnam\0lunacy\0aztec\0");
+                }
+                ImGui::Checkbox("world modulation color", &c::visuals::world::world_modulation::enable);
+                if (c::visuals::world::world_modulation::enable)
+                {
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("##world color", c::visuals::world_color, w_alpha);
-                    ImGui::Text("sky");
+                    ImGui::ColorEdit4("##world color", c::visuals::world::world_modulation::color, w_alpha);
+                }
+                ImGui::Checkbox("sky modulation color", &c::visuals::world::skybox_modulation::enable);
+                if (c::visuals::world::skybox_modulation::enable)
+                {
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("##sky color", c::visuals::sky_color, w_alpha);
+                    ImGui::ColorEdit4("##sky color", c::visuals::world::skybox_modulation::color, w_alpha);
                 }
-                ImGui::Checkbox("bloom modulation", &c::visuals::bloom);
-                if (c::visuals::bloom)
+                ImGui::Checkbox("props modulation color", &c::visuals::world::props_modulation::enable);
+                if (c::visuals::world::props_modulation::enable)
                 {
-                    ImGui::SliderFloat("exposure min", &c::visuals::bloom_exposure_min, 0.0f, 10.0f, ("%.2f"));
-                    ImGui::SliderFloat("exposure max", &c::visuals::bloom_exposure_max, 0.0f, 10.0f, ("%.2f"));
-                    ImGui::SliderFloat("scale", &c::visuals::bloom_scale, 0.0f, 10.0f, ("%.2f"));
-                }
-                ImGui::Checkbox("brightness modulation", &c::visuals::brightness);
-                if (c::visuals::brightness)
-                {
-                    ImGui::SliderFloat("amount", &c::visuals::brightness_amount, 0.0f, 10.0f, ("%.2f"));
-                }
-                ImGui::Checkbox("particles color", &c::visuals::particles);
-                if (c::visuals::particles)
-                {
-                    ImGui::Text("particles color");
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("##particles color", c::visuals::particles_color, w_alpha);
+                    ImGui::ColorEdit4("##props color", c::visuals::world::props_modulation::color, w_alpha);
                 }
-                ImGui::Checkbox("full bright", &c::visuals::fullbright);
-                ImGui::Checkbox("ragdoll player", &c::visuals::ragdoll);
-                if (c::visuals::ragdoll)
+                ImGui::Checkbox("bloom modulation", &c::visuals::world::bloom::enable);
+                if (c::visuals::world::bloom::enable)
+                {
+                    ImGui::SliderFloat("exposure min", &c::visuals::world::bloom::exposure_min, 0.0f, 10.0f, ("%.2f"));
+                    ImGui::SliderFloat("exposure max", &c::visuals::world::bloom::exposure_max, 0.0f, 10.0f, ("%.2f"));
+                    ImGui::SliderFloat("scale", &c::visuals::world::bloom::scale, 0.0f, 10.0f, ("%.2f"));
+                }
+                ImGui::Checkbox("brightness modulation", &c::visuals::world::brightness::enable);
+                if (c::visuals::world::brightness::enable)
+                {
+                    ImGui::SliderFloat("amount", &c::visuals::world::brightness::amount, 0.0f, 10.0f, ("%.2f"));
+                }
+                ImGui::Checkbox("particles color", &c::visuals::world::particles::enable);
+                if (c::visuals::world::particles::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##particles color", c::visuals::world::particles::color, w_alpha);
+                }
+                ImGui::Checkbox("full bright", &c::visuals::world::fullbright::enable);
+                ImGui::Checkbox("ragdoll modulation", &c::visuals::world::ragdoll::enable);
+                if (c::visuals::world::ragdoll::enable)
                 {
                     ImGui::Text("style");
-                    ImGui::Combo("##ragdoll", &c::visuals::ragdoll_style, "none\0from us\0to us\0to sky\0");
+                    ImGui::Combo("##ragdoll", &c::visuals::world::ragdoll::style, "none\0from us\0to us\0to sky\0");
                 }
 
                 ImGui::Separator();
 
-                ImGui::Text("change skybox");
-                ImGui::Combo("##skybox", &c::visuals::skybox, "none\0baggage\0tibet\0embassy\0italy\0jungle\0nuke\0office\0daylight 1\0daylight 2\0daylight 3\0daylight 4\0cloudy 1\0night 1\0night 2\0day 2 hdr\0day 2\0dust\0rural\0venice\0vertigo hdr\0vertigo\0vertigo blue hdr\0vietnam\0lunacy\0aztec\0");
-
-                ImGui::Separator();
-
-                ImGui::Checkbox("remove smoke", &c::visuals::nosmoke);
-                ImGui::Checkbox("remove flash", &c::visuals::change_flashalpha);
-                if (c::visuals::change_flashalpha)
+                ImGui::Checkbox("remove/reduce flash", &c::visuals::flash::enable);
+                if (c::visuals::flash::enable)
                 {
-                    ImGui::SliderInt("flash reduce", &c::visuals::flashalpha, 0, 100, "%d");
+                    ImGui::Checkbox("remove flash", &c::visuals::flash::full);
+
+                    if (!c::visuals::flash::full)
+                    {
+                        ImGui::SliderInt("flash reduce", &c::visuals::flash::alpha, 0, 100, "%d");
+                    }
                 }
-                ImGui::Checkbox("remove post processing", &c::visuals::nopostproccesing);
+                ImGui::Checkbox("remove smoke", &c::visuals::smoke::enable);
+                ImGui::Checkbox("remove scope", &c::visuals::scope::enable);
+                if (c::visuals::scope::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##scope color", c::visuals::scope::color, w_alpha);
+                }
+                ImGui::Checkbox("remove panorama blur", &c::visuals::panorama_blur::enable);
+                ImGui::Checkbox("remove post processing", &c::visuals::post_processing::enable);
+                ImGui::Checkbox("remove player model", &c::visuals::player_model::enable);
+                ImGui::Checkbox("remove player sleeves", &c::visuals::player_sleeves::enable);
 
                 ImGui::Spacing();
 
@@ -899,7 +993,7 @@ void miscellaneous() {
                     ImGui::ColorEdit4("##velocity graph", c::movement::indicators::graphs::velocity::color, no_alpha);
                     ImGui::Checkbox("draw velocity", &c::movement::indicators::graphs::velocity::draw_velocity);
                     ImGui::Checkbox("draw edgebug (wip)", &c::movement::indicators::graphs::velocity::draw_edgebug);
-                    ImGui::Checkbox("draw jumpbug (wip)", &c::movement::indicators::graphs::velocity::draw_jumpbug);
+                    ImGui::Checkbox("draw jumpbug", &c::movement::indicators::graphs::velocity::draw_jumpbug);
                     ImGui::Checkbox("draw pixelsurf (wip)", &c::movement::indicators::graphs::velocity::draw_pixelsurf);
                 }
                 ImGui::Checkbox("stamina", &c::movement::indicators::graphs::stamina::enable);
@@ -1039,18 +1133,14 @@ void miscellaneous() {
 
             ImGui::Separator();
 
-            ImGui::Checkbox(("clan tag spammer"), &c::misc::misc_clantag_spammer);
+            ImGui::Checkbox("clan tag", &c::misc::misc_clantag_spammer);
             if (c::misc::misc_clantag_spammer) {
-                ImGui::Text("clan tag type");
-                ImGui::Combo(("##cltype"), &c::misc::misc_clantag_type, "static\0custom");
+                ImGui::Text("type");
+                ImGui::Combo("##cltype", &c::misc::misc_clantag_type, "static\0animated custom\0synchronized");
                 if (c::misc::misc_clantag_type == 1) {
-                    ImGui::Checkbox(("animated clan tag"), &c::misc::misc_animated_clantag);
-                    ImGui::Checkbox(("reverse rolling direction"), &c::misc::misc_clantag_rotation);
-                    if (c::misc::misc_animated_clantag) {
-                        ImGui::Text(("clan tag speed"));
-                        ImGui::SliderFloat(("##tag speed"), &c::misc::misc_clantag_speed, 0.1, 2.f, ("%.2f"));
-                    }
-                    ImGui::Text("custom clan tag");
+                    ImGui::Checkbox("reverse rolling direction", &c::misc::misc_clantag_rotation);
+                    ImGui::SliderFloat("speed", &c::misc::misc_clantag_speed, 0.1f, 2.0f, ("%.2f"));
+                    ImGui::Text("custom text");
                     ImGui::PushItemWidth(200.f);
                     ImGui::InputText("##clantagtext", c::misc::misc_clantag_text, IM_ARRAYSIZE(c::misc::misc_clantag_text));
                 }
@@ -1058,11 +1148,17 @@ void miscellaneous() {
 
             ImGui::Separator();
 
+            ImGui::Checkbox("hit chams (wip)", &c::misc::misc_hitchams);
+            if (c::misc::misc_hitchams)
+            {
+                ImGui::SameLine();
+                ImGui::ColorEdit4("##hit chams color", c::misc::misc_hitchams_clr, w_alpha);
+            }
             ImGui::Checkbox("hit marker", &c::misc::misc_hitmarker);
-            ImGui::Checkbox(("hit sound"), &c::misc::misc_hitmarker_sound);
+            ImGui::Checkbox("hit sound", &c::misc::misc_hitmarker_sound);
             if (c::misc::misc_hitmarker_sound)
 			{
-                ImGui::Combo(("##hsoundtype"), &c::misc::misc_hitmarker_sound_type, "arena_switch_press_02\0button22\0money_collect_01\0beep07");
+                ImGui::Combo("##sound_type", &c::misc::misc_hitmarker_sound_type, "arena_switch_press_02\0button22\0money_collect_01\0beep07");
             }
 			
             static const char* hitinfo[3] = { "chat", "screen", "console" };

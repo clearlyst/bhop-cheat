@@ -234,24 +234,36 @@ void features::visuals::player::run()
 
 		draw_bottom_bar(entity, _box, c::visuals::players::colors::custom ? ammo_bar : check_on_see ? visible : invisible, c::visuals::players::colors::custom ? health_text : check_on_see ? visible : invisible, c::visuals::players::colors::custom ? weapon_icon : check_on_see ? visible : invisible, c::visuals::players::colors::custom ? weapon_text : check_on_see ? visible : invisible, c::visuals::players::colors::custom ? ammo_text : check_on_see ? visible : invisible, c::visuals::players::colors::custom ? distance : check_on_see ? visible : invisible, ammo_bar_outline);
 
-		if (c::visuals::dlight)
+		if (c::visuals::players::dlight::enable)
 		{
 			dlights(entity);
 		}
 	}
 
-	/*
+	
 	for (int i = 1; i < interfaces::ent_list->get_highest_index(); i++)
 	{
-		auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(i));
+		auto entity = reinterpret_cast<entity_t*>(interfaces::ent_list->get_client_entity(i));
 
 		if (!entity || entity->is_player() || entity->dormant() || entity == g::local)
 		{
 			continue;
 		}
 
+		if (c::visuals::players::thrown_grenade::text::enable || c::visuals::players::thrown_grenade::icon::enable)
+		{
+			throwed_grenade(entity);
+		}
+
+		if (c::visuals::players::dropped_weapon::box::enable ||
+			c::visuals::players::dropped_weapon::ammo_bar::enable ||
+			c::visuals::players::dropped_weapon::ammo_text::enable ||
+			c::visuals::players::dropped_weapon::text::enable ||
+			c::visuals::players::dropped_weapon::icon::enable)
+		{
+			dropped_weapon(entity);
+		}
 	}
-	*/
 }
 
 void features::visuals::player::draw_name(player_t* entity, bbox_t bbox, color_t color)
@@ -625,7 +637,7 @@ void features::visuals::player::draw_bottom_bar(player_t* entity, bbox_t bbox, c
 					im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + 2 + offset_bottom, c::fonts::esp_sub_size, fonts::sub_esp_font, c::visuals::players::health_text::hide_suffix ? std::to_string(entity->health()) : std::to_string(entity->health()) + " hp", true, health_text, c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 				}
 
-				offset_bottom += 2 + c::fonts::esp_sub_size;
+				offset_bottom += 4 + c::fonts::esp_sub_size;
 			}
 		}
 		else
@@ -639,7 +651,7 @@ void features::visuals::player::draw_bottom_bar(player_t* entity, bbox_t bbox, c
 				im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + 2 + offset_bottom, c::fonts::esp_sub_size, fonts::sub_esp_font, c::visuals::players::health_text::hide_suffix ? std::to_string(entity->health()) : std::to_string(entity->health()) + " hp", true, health_text, c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 			}
 
-			offset_bottom += 2 + c::fonts::esp_sub_size;
+			offset_bottom += 4 + c::fonts::esp_sub_size;
 		}
 	}
 
@@ -817,5 +829,169 @@ void features::visuals::player::draw_sounds() {
 			else 
 				break;
 		}
+	}
+}
+
+void features::visuals::throwed_grenade(entity_t* entity)
+{
+	auto client_class = entity->client_class();
+
+	if (!client_class)
+	{
+		return;
+	}
+
+	auto model = entity->model();
+
+	if (!model)
+	{
+		return;
+	}
+
+	auto studio_model = interfaces::model_info->get_studio_model(model);
+
+	if (!studio_model)
+	{
+		return;
+	}
+
+	auto name = (std::string)studio_model->name_char_array;
+
+	if (strstr(client_class->network_name, "Projectile"))
+	{
+		if (!strstr(studio_model->name_char_array, "thrown") && !strstr(studio_model->name_char_array, "dropped"))
+		{
+			return;
+		}
+
+		vec3_t grenade_origin = entity->origin();
+		vec3_t grenade_position;
+
+		if (!interfaces::debug_overlay->world_to_screen(grenade_origin, grenade_position))
+		{
+			return;
+		}
+
+		im_render.text(grenade_position.x, grenade_position.y - 13, c::fonts::esp_sub_size, fonts::sub_esp_font, ("thrown"), true, color_t(255, 255, 255, 200), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+
+		std::string grenade_name;
+		std::string grenade_icon;
+
+		if (name.find("flashbang") != std::string::npos)
+		{
+			grenade_name = ("flashbang");
+			grenade_icon = u8toStr(u8"\uE02B");
+		}
+
+		if (name.find("smokegrenade") != std::string::npos)
+		{
+			grenade_name = ("smoke");
+			grenade_icon = u8toStr(u8"\uE02D");
+		}
+
+		if (name.find("incendiarygrenade") != std::string::npos)
+		{
+			grenade_name = ("incgrenade");
+			grenade_icon = u8toStr(u8"\uE030");
+		}
+
+		if (name.find("molotov") != std::string::npos)
+		{
+			grenade_name = ("molotov");
+			grenade_icon = u8toStr(u8"\uE02E");
+		}
+
+		if (name.find("fraggrenade") != std::string::npos)
+		{
+			grenade_name = ("he grenade");
+			grenade_icon = u8toStr(u8"\uE02C");
+		}
+
+		if (name.find("decoy") != std::string::npos)
+		{
+			grenade_name = ("decoy");
+			grenade_icon = u8toStr(u8"\uE02F");
+		}
+
+		auto offset = 0;
+
+
+		if (c::visuals::players::thrown_grenade::icon::enable)
+		{
+			im_render.text(grenade_position.x, grenade_position.y, 12.0f, fonts::icon_font, grenade_icon, true, color_t(c::visuals::players::thrown_grenade::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+
+			offset += 13;
+		}
+
+		if (c::visuals::players::thrown_grenade::text::enable)
+		{
+			im_render.text(grenade_position.x, grenade_position.y + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, grenade_name, true, color_t(c::visuals::players::thrown_grenade::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+		}
+	}
+}
+
+void features::visuals::dropped_weapon(entity_t* entity)
+{
+	auto weapon = (weapon_t*)entity;
+
+	auto is_weapon = weapon->is_weapon();
+
+	if (!is_weapon)
+	{
+		return;
+	}
+
+	auto weapon_data = weapon->get_weapon_data();
+
+	if (!weapon_data)
+	{
+		return;
+	}
+
+	auto current = weapon->clip1_count();
+	auto max = weapon_data->m_iMaxClip;
+
+	vec3_t droppedweapon_origin = weapon->origin();
+	vec3_t droppedweapon_position;
+
+	if (droppedweapon_origin.x == 0.f && droppedweapon_origin.y == 0.f && droppedweapon_origin.z == 0.f)
+	{
+		return;
+	}
+
+	if (!interfaces::debug_overlay->world_to_screen(droppedweapon_origin, droppedweapon_position))
+	{
+		return;
+	}
+
+	if (droppedweapon_position.x == 0.f && droppedweapon_position.y == 0.f && droppedweapon_position.z == 0.f)
+	{
+		return;
+	}
+
+	std::string droppedweapon_name = weapon->weapon_name_definition();
+	std::string droppedweapon_icon = u8toStr(weapon->get_wpn_icon());
+	std::string currentammo_text = std::to_string(current);
+	std::string maxammo_text = std::to_string(max);
+
+	auto offset = 0;
+
+	if (c::visuals::players::dropped_weapon::icon::enable)
+	{
+		im_render.text(droppedweapon_position.x, droppedweapon_position.y, 12.0f, fonts::icon_font, droppedweapon_icon, true, color_t(c::visuals::players::dropped_weapon::color_text), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+
+		offset += 13;
+	}
+
+	if (c::visuals::players::dropped_weapon::text::enable)
+	{
+		im_render.text(droppedweapon_position.x, droppedweapon_position.y + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, droppedweapon_name, true, color_t(c::visuals::players::dropped_weapon::color_text), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+
+		offset += 13;
+	}
+
+	if (c::visuals::players::dropped_weapon::ammo_text::enable && weapon->isgun())
+	{
+		im_render.text(droppedweapon_position.x, droppedweapon_position.y + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, ("[") + currentammo_text + (" / ") + maxammo_text + ("]"), true, color_t(c::visuals::players::dropped_weapon::color_text), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 	}
 }

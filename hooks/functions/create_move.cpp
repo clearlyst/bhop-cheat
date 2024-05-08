@@ -48,6 +48,7 @@ bool __stdcall sdk::hooks::create_move::create_move(float sampletime, c_usercmd*
 	}
 	prediction::stop();
 
+	features::movement::auto_pixelsurf(cmd);
 	features::movement::edge_jump(cmd);
 	features::movement::jump_bug(cmd);
 	features::movement::edge_bug(cmd);

@@ -56,6 +56,7 @@ void imgui_render::setup_font()
 	fonts::esp_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_esp.c_str(), c::fonts::esp_size, &esp_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::sub_esp_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_esp.c_str(), c::fonts::esp_sub_size, &sub_esp_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::icon_font = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(icon_font, icon_font_size, 12.0f, &cfg_icon, ranges);
+	fonts::debug_information_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahomabd.ttf", c::fonts::debug_information_size, &cfg_icon, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 
 	ImGuiFreeType::BuildFontAtlas(ImGui::GetIO().Fonts);
 }
@@ -93,6 +94,7 @@ void imgui_render::reload_setup_font()
 	fonts::esp_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_esp.c_str(), c::fonts::esp_size, &esp_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::sub_esp_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_esp.c_str(), c::fonts::esp_sub_size, &sub_esp_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::icon_font = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(icon_font, icon_font_size, 12.0f, &cfg_icon, ranges);
+	fonts::debug_information_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahomabd.ttf", c::fonts::debug_information_size, &cfg_icon, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 
 	ImGuiFreeType::BuildFontAtlas(ImGui::GetIO().Fonts);
 }
@@ -325,6 +327,7 @@ void fonts::reset_fonts( ) {
 	font_directory_sub_indicator = "C:/windows/fonts/tahomabd.ttf";
 	font_directory_esp = "C:/windows/fonts/tahoma.ttf";
 	font_directory_sub_esp = "C:/windows/fonts/tahoma.ttf";
+	font_directory_debug_information = "C:/windows/fonts/tahomabd.ttf";
 
 	c::fonts::indi_font = 0;
 	c::fonts::sub_indi_font = 0;
@@ -332,6 +335,7 @@ void fonts::reset_fonts( ) {
 	c::fonts::esp_sub_font = 0;
 	c::fonts::scene_font = 0;
 	c::fonts::scene_sub_font = 0;
+	c::fonts::debug_information_font = 0;
 
 	c::fonts::indi_size = 28;
 	c::fonts::sub_indi_size = 12;
@@ -339,4 +343,5 @@ void fonts::reset_fonts( ) {
 	c::fonts::esp_sub_size = 9;
 	c::fonts::scene_size = 12;
 	c::fonts::scene_size = 12;
+	c::fonts::debug_information_size = 32;
 }

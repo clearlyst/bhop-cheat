@@ -25,6 +25,7 @@ namespace features::movement
 	void strafe_optimizer(c_usercmd* user_cmd);
 	void mouse_strafe_limiter(float* x, float* y);
 	void auto_align(c_usercmd* cmd);
+	void auto_pixelsurf(c_usercmd* cmd);
 
 	void velocity_indicator();
 	void stamina_indicator();
@@ -36,6 +37,12 @@ namespace features::movement
 	void stamina_graph_indicator();
 
 	inline ImVec2 graph_position;
+
+	struct pixelsurf_data_t
+	{
+		bool pixelsurf_ducked = false;
+		int pixelsurf_ticks = 0;
+	};
 
 	struct indicator
 	{
@@ -50,6 +57,7 @@ namespace features::movement
 		bool pixelsurfed;
 		bool jumpbugged;
 		bool edgebugged;
+		bool was_in_prediction;
 	};
 
 	struct stamina_data_t
@@ -58,8 +66,8 @@ namespace features::movement
 		bool on_ground;
 	};
 
+	inline pixelsurf_data_t ps_data;
 	inline std::vector<velocity_data_t> velocity_data;
 	inline std::vector<stamina_data_t> stamina_data;
 	inline std::unordered_map<std::string, indicator> m_indicators;
-
 }

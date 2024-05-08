@@ -2,7 +2,7 @@
 
 void features::visuals::dormant_system::start() {
 	CUtlVector<SndInfo_t> m_utlCurSoundList;
-	//interfaces::engine_sound->GetActiveSounds(m_utlCurSoundList);
+	interfaces::engine_sound->GetActiveSounds(m_utlCurSoundList);
 
 	if (!m_utlCurSoundList.Count())
 		return;
@@ -90,7 +90,7 @@ void features::visuals::dormant_system::adjust_player_finish() {
 	m_arRestorePlayers.clear();
 
 	CUtlVector<SndInfo_t> m_utlCurSoundList;
-	//interfaces::engine_sound->GetActiveSounds(m_utlCurSoundList);
+	interfaces::engine_sound->GetActiveSounds(m_utlCurSoundList);
 
 	if (!m_utlCurSoundList.Count())
 		return;

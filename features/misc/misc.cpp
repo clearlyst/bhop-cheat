@@ -300,6 +300,7 @@ void features::misc::clantag_spammer()
 {
 	if (!c::misc::misc_clantag_spammer)
 	{
+		apply_clan_tag(xs(" "), xs(" "));
 		return;
 	}
 
@@ -313,48 +314,73 @@ void features::misc::clantag_spammer()
 		return;
 	}
 
-	static bool reset = true;
-	static auto lasttime = 0.0f;
+	static float lasttime = 0.0f;
 	static std::string torotate = c::misc::misc_clantag_text;
 	static std::string rotating = c::misc::misc_clantag_text;
+	float latency = interfaces::engine->get_net_channel_info()->get_latency(FLOW_INCOMING) + interfaces::engine->get_net_channel_info()->get_latency(FLOW_OUTGOING);
 
 	if (c::misc::misc_clantag_type == 0)
 	{
-		if (interfaces::globals->realtime - lasttime < 1.0f)
-		{
+		apply_clan_tag(xs("bhop cheat "), xs("bhop cheat"));
+	}
+	else if (c::misc::misc_clantag_type == 1)
+	{
+		if (interfaces::globals->realtime - lasttime < c::misc::misc_clantag_speed)
 			return;
+
+		if (torotate != std::string(c::misc::misc_clantag_text)) {
+			torotate = c::misc::misc_clantag_text;
+			rotating = c::misc::misc_clantag_text;
 		}
 
-		apply_clan_tag(xs("ozungaware "), xs("ozungaware "));
+		if (c::misc::misc_clantag_rotation) {
+			if (!rotating.empty()) {
+				char last = rotating.back();
+				rotating.pop_back();
+				rotating.insert(rotating.begin(), last);
+				apply_clan_tag(rotating.c_str(), torotate.c_str());
+			}
+		}
+		else {
+			if (!rotating.empty()) {
+				std::rotate(rotating.begin(), rotating.begin() + (rotating.size() - 1), rotating.end());
+				apply_clan_tag(rotating.c_str(), torotate.c_str());
+			}
+		}
 
 		lasttime = interfaces::globals->realtime;
 	}
-	else if (c::misc::misc_clantag_type == 1) {
-		if (c::misc::misc_animated_clantag) {
-			if (interfaces::globals->realtime - lasttime < c::misc::misc_clantag_speed)
-				return;
-
-			if (torotate != std::string(c::misc::misc_clantag_text)) {
-				torotate = c::misc::misc_clantag_text;
-				rotating = c::misc::misc_clantag_text;
-			}
-
-			if (c::misc::misc_clantag_rotation) {
-				if (!rotating.empty()) {
-					char last = rotating.back();
-					rotating.pop_back();
-					rotating.insert(rotating.begin(), last);
-					apply_clan_tag(rotating.c_str(), torotate.c_str());
+	else if (c::misc::misc_clantag_type == 2) {
+		if (interfaces::globals->cur_time * 0.8f + latency != lasttime)
+		{
+			if (interfaces::globals->realtime - interfaces::globals->cur_time > 1.f)
+			{
+				switch (int(interfaces::globals->cur_time * 0.8f) % 20)
+				{
+				case 0: apply_clan_tag("$$$$$$$$$$", "bhop cheat"); break;
+				case 1: apply_clan_tag("$$$$$$$$$t", "bhop cheat"); break;
+				case 2: apply_clan_tag("$$$$$$$$at", "bhop cheat"); break;
+				case 3: apply_clan_tag("$$$$$$$eat", "bhop cheat"); break;
+				case 4: apply_clan_tag("$$$$$$heat", "bhop cheat"); break;
+				case 5: apply_clan_tag("$$$$$cheat", "bhop cheat"); break;
+				case 6: apply_clan_tag("$$$$ cheat", "bhop cheat"); break;
+				case 7: apply_clan_tag("$$$p cheat", "bhop cheat"); break;
+				case 8: apply_clan_tag("$$op cheat", "bhop cheat"); break;
+				case 9: apply_clan_tag("$hop cheat", "bhop cheat"); break;
+				case 10: apply_clan_tag("bhop cheat", "bhop cheat"); break;
+				case 11: apply_clan_tag("$hop cheat", "bhop cheat"); break;
+				case 12: apply_clan_tag("$$op cheat", "bhop cheat"); break;
+				case 13: apply_clan_tag("$$$p cheat", "bhop cheat"); break;
+				case 14: apply_clan_tag("$$$$ cheat", "bhop cheat"); break;
+				case 15: apply_clan_tag("$$$$$cheat", "bhop cheat"); break;
+				case 16: apply_clan_tag("$$$$$$heat", "bhop cheat"); break;
+				case 17: apply_clan_tag("$$$$$$$eat", "bhop cheat"); break;
+				case 18: apply_clan_tag("$$$$$$$$at", "bhop cheat"); break;
+				case 19: apply_clan_tag("$$$$$$$$$t", "bhop cheat"); break;
 				}
 			}
-			else {
-				if (!rotating.empty()) {
-					std::rotate(rotating.begin(), rotating.begin() + (rotating.size() - 1), rotating.end());
-					apply_clan_tag(rotating.c_str(), torotate.c_str());
-				}
-			}
 
-			lasttime = interfaces::globals->realtime;
+			lasttime = interfaces::globals->cur_time * 0.8f + latency;
 		}
 	}
 }
@@ -375,7 +401,7 @@ void features::misc::hitmarker::event(i_game_event* event)
 
 	auto event_name = fnv::hash(event->get_name());
 	auto attacker = interfaces::ent_list->get_client_entity(interfaces::engine->get_player_for_user_id(event->get_int("attacker")));
-	//auto user_id = interfaces::engine->get_player_for_user_id(event->get_int("userid"));
+	auto user_id = interfaces::engine->get_player_for_user_id(event->get_int("userid"));
 
 	if (!attacker || !event_name)
 	{
@@ -385,61 +411,62 @@ void features::misc::hitmarker::event(i_game_event* event)
 	switch (event_name) 
 	{
 		case fnv::hash("player_hurt"):
-			if (attacker == g::local) 
+			if (attacker == g::local)
 			{
 				hitmarker_time = 500;
 
-				if (c::misc::misc_hitmarker_sound) 
+				if (c::misc::misc_hitmarker_sound)
 				{
 					switch (c::misc::misc_hitmarker_sound_type)
 					{
-						case 0: interfaces::surface->play_sound("buttons\\arena_switch_press_02.wav"); break;
-						case 1: interfaces::surface->play_sound("buttons\\button22.wav"); break;
-						case 2: interfaces::surface->play_sound("survival\\money_collect_01.wav"); break;
-						case 3: interfaces::surface->play_sound("Ui\\beep07.wav"); break;
+					case 0: interfaces::surface->play_sound("buttons\\arena_switch_press_02.wav"); break;
+					case 1: interfaces::surface->play_sound("buttons\\button22.wav"); break;
+					case 2: interfaces::surface->play_sound("survival\\money_collect_01.wav"); break;
+					case 3: interfaces::surface->play_sound("Ui\\beep07.wav"); break;
 					}
 				}
-				/*
-			if (c::misc::misc_hitchams)
-			{
-				const auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(user_id));
 
-				if (!entity)
-					return;
-
-				if (!entity->index())
-					return;
-
-				matrix_t bone_matrix[MAXSTUDIOBONES];
-
-				if (!entity->setup_bones(bone_matrix, MAXSTUDIOBONES, BONE_USED_BY_HITBOX, interfaces::globals->cur_time))
-					return;
-
-				studiohdr_t* studio_hdr = g_MdlInfo->GetStudiomodel(entity->GetModel());
-
-				if (!studio_hdr)
-					return;
-
-				const auto hitbox_set = studio_hdr->GetHitboxSet(entity->hitbox_set());
-
-				if (!hitbox_set)
-					return;
-
-				for (int i = 0; i < hitbox_set->numhitboxes; i++)
+				if (c::misc::misc_hitchams)
 				{
-					mstudiobbox_t* hitbox = hitbox_set->GetHitbox(i);
+					const auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(user_id));
 
-					if (!hitbox)
-						continue;
+					if (!entity)
+						return;
 
-					vec3_t min_actual, max_actual;
+					if (!entity->index())
+						return;
 
-					math::vector_transform(hitbox->bbmin, bone_matrix[hitbox->bone], min_actual);
-					math::vector_transform(hitbox->bbmax, bone_matrix[hitbox->bone], max_actual);
+					matrix_t bone_matrix[MAXSTUDIOBONES];
 
-					interfaces::debug_overlay->add_capsule_overlay(min_actual, max_actual, hitbox->m_flRadius, color_t(c::misc::misc_hitchams_color), 2.5f);
-				}*/
-			} 
+					if (!entity->setup_bones(bone_matrix, MAXSTUDIOBONES, BONE_USED_BY_HITBOX, interfaces::globals->cur_time))
+						return;
+
+					studio_hdr_t* studio_hdr = interfaces::model_info->get_studio_model(entity->model());
+
+					if (!studio_hdr)
+						return;
+
+					const auto  hitbox_set = studio_hdr->hitbox_set(entity->hitbox_set());
+
+					if (!hitbox_set)
+						return;
+
+					for (int i = 0; i < hitbox_set->hitbox_count; i++)
+					{
+						studio_box_t* hitbox = hitbox_set->hitbox(i);
+
+						if (!hitbox)
+							continue;
+
+						vec3_t min_actual, max_actual;
+
+						math::vector_transform(hitbox->mins, bone_matrix[hitbox->bone], min_actual);
+						math::vector_transform(hitbox->maxs, bone_matrix[hitbox->bone], max_actual);
+
+						interfaces::debug_overlay->add_capsule_overlay(min_actual, max_actual, hitbox->radius, color_t(c::misc::misc_hitchams_clr), 2.5f);
+					}
+				}
+			}
 		break;
 	}
 }
@@ -617,10 +644,12 @@ void features::misc::force_crosshair()
 	if (c::misc::force_crosshair)
 	{
 		interfaces::console->get_convar("weapon_debug_spread_show")->set_value(3);
+		interfaces::console->get_convar("cl_crosshairdot")->set_value(1);
 	}
 	else
 	{
 		interfaces::console->get_convar("weapon_debug_spread_show")->set_value(0);
+		interfaces::console->get_convar("cl_crosshairdot")->set_value(0);
 	}
 }
 
@@ -695,73 +724,6 @@ void features::misc::sniper_crosshair()
 	im_render.drawrectfilled((g::width / 2) - 2, (g::height / 2) - 2, 2, 2, color_t(255, 255, 255));
 }
 
-enum spectators_mode
-{
-
-	OBS_MODE_NONE,
-	OBS_MODE_DEATHCAM,
-	OBS_MODE_FREEZECAM,
-	OBS_MODE_FIXED,
-	OBS_MODE_IN_EYE,
-	OBS_MODE_CHASE,
-	OBS_MODE_ROAMING,
-};
-
-void CopyConvert(const uint8_t* rgba, uint8_t* out, const size_t size)
-{
-	auto in = reinterpret_cast<const uint32_t*>(rgba);
-	auto buf = reinterpret_cast<uint32_t*>(out);
-	for (auto i = 0u; i < (size / 4); ++i)
-	{
-		const auto pixel = *in++;
-		*buf++ = (pixel & 0xFF00FF00) | ((pixel & 0xFF0000) >> 16) | ((pixel & 0xFF) << 16);
-	}
-}
-
-LPDIRECT3DTEXTURE9 SteamImageBySteamID(CSteamID steam)
-{
-	LPDIRECT3DTEXTURE9 asdgsdgadsg;
-
-	int iImage = interfaces::steam_friend->get_large_friend_avatar(steam);
-	if (iImage == -1)
-		return nullptr;
-
-	uint32 uAvatarWidth, uAvatarHeight;
-	if (!interfaces::steam_utils->get_image_size(iImage, &uAvatarWidth, &uAvatarHeight))
-		return nullptr;
-
-	const int uImageSizeInBytes = uAvatarWidth * uAvatarHeight * 4;
-	uint8* pAvatarRGBA = new uint8[uImageSizeInBytes];
-
-	if (!interfaces::steam_utils->get_image_rgba(iImage, pAvatarRGBA, uImageSizeInBytes))
-	{
-		delete[] pAvatarRGBA;
-		return nullptr;
-	}
-
-	auto res = interfaces::device->CreateTexture(uAvatarWidth, uAvatarHeight, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &asdgsdgadsg, nullptr);
-
-	std::vector<uint8_t> texData;
-	texData.resize(uAvatarWidth * uAvatarHeight * 4u);
-	CopyConvert(pAvatarRGBA, texData.data(), uAvatarWidth * uAvatarHeight * 4u);
-
-	D3DLOCKED_RECT rect;
-	res = asdgsdgadsg->LockRect(0, &rect, nullptr, D3DLOCK_DISCARD);
-	auto src = texData.data();
-	auto dst = reinterpret_cast<uint8_t*>(rect.pBits);
-	for (auto y = 0u; y < uAvatarHeight; ++y)
-	{
-		std::copy(src, src + (uAvatarWidth * 4), dst);
-		src += uAvatarWidth * 4;
-		dst += rect.Pitch;
-	}
-
-	res = asdgsdgadsg->UnlockRect(0);
-	delete[] pAvatarRGBA;
-
-	return asdgsdgadsg;
-}
-
 void features::misc::spectators_list()
 {
 	if (!c::misc::spectators_list)
@@ -809,22 +771,22 @@ void features::misc::spectators_list()
 
 		switch (entity->observer_mode())
 		{
-		case OBS_MODE_IN_EYE:
+		case obs_mode_in_eye:
 			mode = "first person";
 			break;
-		case OBS_MODE_CHASE:
+		case obs_mode_chase:
 			mode = "3rd person";
 			break;
-		case OBS_MODE_ROAMING:
+		case obs_mode_roaming:
 			mode = "noclip";
 			break;
-		case OBS_MODE_DEATHCAM:
+		case obs_mode_deathcam:
 			mode = "deathcam";
 			break;
-		case OBS_MODE_FREEZECAM:
+		case obs_mode_freezecam:
 			mode = "freezecam";
 			break;
-		case OBS_MODE_FIXED:
+		case obs_mode_fixed:
 			mode = "fixed";
 			break;
 		default:
@@ -841,4 +803,76 @@ void features::misc::spectators_list()
 	}
 
 	im_render.text(c::misc::spectators_list_avatars ? 25 : 5, features::notification::notify_list.empty() ? 5 : 5 + (features::notification::offset_message * 14.0f), c::fonts::scene_size, fonts::scene_font, name.c_str(), false, color_t(255, 255, 255, 255), c::fonts::scene_flag[9], c::fonts::scene_flag[10]);
+}
+
+void features::misc::spread_circle()
+{
+	if (!c::misc::spread_circle::enable)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	const auto weapon = g::local->active_weapon();
+
+	if (!weapon)
+	{
+		return;
+	}
+
+	float radius = (weapon->inaccuracy() + weapon->get_spread()) * g::width / 2;
+
+	im_render.drawcircle(g::width / 2, g::height / 2, radius, 64, c::misc::spread_circle::color, 1.0f);
+}
+
+void features::misc::big_scene_indicators()
+{
+	if (!c::misc::debug_information::enable)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	int offset_bottom;
+
+	auto text_size = im_render.get_text_size("aim", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
+	auto sp_text_size = im_render.get_text_size("save p", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
+	auto tp_text_size = im_render.get_text_size("can tp", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
+	auto warn_text_size = im_render.get_text_size("setup sv_cheats at true", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
+
+	if (c::misc::debug_information::can_fire::enable && c::aimbot::enable)
+	{
+		im_render.text((g::width - 5) - text_size, g::height / 2, c::fonts::debug_information_size, fonts::debug_information_font, "aim", false, aimbot::can_fire_checking() ? color_t(c::misc::debug_information::can_fire::active_color, 1.0f) : color_t(c::misc::debug_information::can_fire::inactive_color, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+
+		offset_bottom += c::fonts::debug_information_size + 3;
+	}
+
+	if (c::misc::debug_information::check_point_system::enable && c::misc::practice)
+	{
+		if (interfaces::console->get_convar("sv_cheats")->get_int() == 0)
+		{
+			im_render.text(g::width / 2, g::height / 2, c::fonts::debug_information_size, fonts::debug_information_font, "setup sv_cheats at true!", true, color_t(1.0f, 1.0f, 1.0f, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+		}
+		else
+		{
+			im_render.text((g::width - 5) - sp_text_size, (g::height / 2) + offset_bottom, c::fonts::debug_information_size, fonts::debug_information_font, "save p", false, color_t(1.0f, 1.0f, 1.0f, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+
+			offset_bottom += c::fonts::debug_information_size + 3;
+
+			im_render.text((g::width - 5) - tp_text_size, (g::height / 2) + offset_bottom, c::fonts::debug_information_size, fonts::debug_information_font, "can tp", false, color_t(1.0f, 1.0f, 1.0f, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+		}
+	}
 }

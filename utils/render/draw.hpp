@@ -63,6 +63,7 @@ namespace fonts {
 	inline ImFont* esp_font;
 	inline ImFont* sub_esp_font;
 	inline ImFont* icon_font;
+	inline ImFont* debug_information_font;
 
 	inline std::string font_directory_scene = "C:/windows/fonts/tahomabd.ttf";
 	inline std::string font_directory_sub_scene = "C:/windows/fonts/tahomabd.ttf";
@@ -70,6 +71,7 @@ namespace fonts {
 	inline std::string font_directory_sub_indicator = "C:/windows/fonts/tahomabd.ttf";
 	inline std::string font_directory_esp = "C:/windows/fonts/tahoma.ttf";
 	inline std::string font_directory_sub_esp = "C:/windows/fonts/tahoma.ttf";
+	inline std::string font_directory_debug_information = "C:/windows/fonts/tahomabd.ttf";
 
 	inline int selected_font_index_main_scene = -1;
 	inline int selected_font_index_sub_scene = -1;
@@ -77,4 +79,5 @@ namespace fonts {
 	inline int selected_font_index_sub_indi = -1;
 	inline int selected_font_index_main_esp = -1;
 	inline int selected_font_index_sub_esp = -1;
+	inline int selected_font_index_debug_information = -1;
 }

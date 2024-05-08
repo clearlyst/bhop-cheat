@@ -282,7 +282,7 @@ void __fastcall sdk::hooks::particle::simulations(CParticleCollection* thisptr, 
 {
 	sdk::hooks::particle::ofunc(thisptr, edx);
 
-	if (!c::visuals::particles)
+	if (!c::visuals::world::particles::enable)
 	{
 		return;
 	}
@@ -298,12 +298,12 @@ void __fastcall sdk::hooks::particle::simulations(CParticleCollection* thisptr, 
 	for (int i = 0; i < thisptr->m_nActiveParticles; i++) 
 	{
 		auto get_alpha = thisptr->m_ParticleAttributes.FloatAttributePtr(PARTICLE_ATTRIBUTE_ALPHA, i);
-		*get_alpha = std::clamp(*get_alpha, 0.f, c::visuals::particles_color[3]);
+		*get_alpha = std::clamp(*get_alpha, 0.f, c::visuals::world::particles::color[3]);
 
 		float* get_color = thisptr->m_ParticleAttributes.FloatAttributePtr(PARTICLE_ATTRIBUTE_TINT_RGB, i);
 
-		get_color[0] = c::visuals::particles_color[0];
-		get_color[4] = c::visuals::particles_color[1];
-		get_color[8] = c::visuals::particles_color[2];
+		get_color[0] = c::visuals::world::particles::color[0];
+		get_color[4] = c::visuals::world::particles::color[1];
+		get_color[8] = c::visuals::world::particles::color[2];
 	}
 }

@@ -24,6 +24,9 @@ namespace features::visuals {
 
 	void get_update_sounds();
 
+	void throwed_grenade(entity_t* entity);
+	void dropped_weapon(entity_t* entity);
+
 	namespace dormant_system
 	{
 		void start();
@@ -96,6 +99,7 @@ namespace features::visuals {
 	void skybox_changer(client_frame_stage_t stage);
 	void flashalpha();
 	void nosmoke();
+	void draw_scope();
 	void dlights(player_t* entity);
 	void run_freecam(c_usercmd* cmd, vec3_t angles);
 	void freecam(view_setup_t* setup);

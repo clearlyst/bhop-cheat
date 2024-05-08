@@ -215,14 +215,53 @@ namespace c {
 		inline bool force_crosshair = false;
 		inline bool sniper_crosshair = false;
 		inline bool recoil_crosshair = false;
+
+		namespace penetration_reticle
+		{
+			inline bool enable = false;
+		};
+
+		namespace spread_circle
+		{
+			inline bool enable = false;
+			inline float color[3]{ 1.f, 1.f, 1.f };
+		};
+
+		namespace debug_information
+		{
+			inline bool enable = false;
+
+			namespace autowall
+			{
+				inline bool enable = false;
+				inline bool rainbow_color = false;
+				inline float inactive_color[3]{ 1.f, 1.f, 1.f };
+				inline float active_color[3]{ 1.f, 1.f, 1.f };
+			};
+
+			namespace can_fire
+			{
+				inline bool enable = false;
+				inline float inactive_color[3]{ 1.f, 0.f, 0.f };
+				inline float active_color[3]{ 0.f, 1.f, 0.f };
+			};
+
+			namespace check_point_system
+			{
+				inline bool enable = false;
+				inline float inactive_color[3]{ 1.f, 1.f, 1.f };
+				inline float active_color[3]{ 1.f, 1.f, 1.f };
+			};
+		};
+
 		inline bool spectators_list = false;
 		inline bool spectators_list_mode = false;
 		inline bool spectators_list_avatars = false;
 		inline bool practice = false;
-		inline int  savepos = 0;
-		inline int  savepos_s = 1;
-		inline int  loadpos = 0;
-		inline int  loadpos_s = 1;
+		inline int savepos = 0;
+		inline int savepos_s = 1;
+		inline int loadpos = 0;
+		inline int loadpos_s = 1;
 		inline bool enable_fov = false;
 		inline float field_of_view = 68.0f;
 		inline bool view_model = false;
@@ -233,7 +272,6 @@ namespace c {
 		inline bool swayscale = false;
 		inline float swayscale_value = 0.f;
 		inline char misc_clantag_text[256] = " ";
-		inline bool misc_animated_clantag = false;
 		inline bool misc_clantag_spammer = false;
 		inline bool misc_clantag_rotation = false;
 		inline int misc_clantag_type = 0;
@@ -241,6 +279,8 @@ namespace c {
 		inline bool misc_hitmarker = false;
 		inline bool misc_hitmarker_sound = false;
 		inline bool misc_hit_info[3] = { false, false, false };
+		inline bool misc_hitchams = false;
+		inline float misc_hitchams_clr[4]{ 1.f, 1.f, 1.f, 1.f };
 		inline int misc_hitmarker_sound_type = 0;
 		inline bool nadepred = false;
 		inline float nadepred_clr[3]{ 1.f, 1.f, 1.f };
@@ -445,45 +485,174 @@ namespace c {
 			{
 				inline bool enable = false;
 				inline float radius = 50.0f;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace dropped_weapon
+			{
+				inline float color_text[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 180 / 255.0f };
+
+				namespace box
+				{
+					inline bool enable = false;
+					inline int type = 0;
+					inline bool outline[2] = { false, false };
+					inline float lenght = 5.f;
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 180 / 255.0f };
+				};
+
+				namespace text
+				{
+					inline bool enable = false;
+				};
+
+				namespace icon
+				{
+					inline bool enable = false;
+				};
+
+				namespace ammo_text
+				{
+					inline bool enable = false;
+				};
+
+				namespace ammo_bar
+				{
+					inline bool enable = false;
+					inline bool background = false;
+					inline int size = 1;
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
+				};
+			};
+
+			namespace thrown_grenade
+			{
+				inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 180 / 255.0f };
+
+				namespace text
+				{
+					inline bool enable = false;
+				};
+
+				namespace icon
+				{
+					inline bool enable = false;
+				};
 			};
 		};
 
 		namespace world
 		{
+			namespace fog
+			{
+				inline bool enable = false;
+				inline float start = 0.0f;
+				inline float end = 3000.0f;
+				inline float density = 1.0f;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
 
+			namespace shadow
+			{
+				inline bool enable = false;
+				inline float x = 200.0f;
+				inline float y = 300.0f;
+				inline float z = -600.0f;
+			};
+
+			namespace bloom
+			{
+				inline bool enable = false;
+				inline float scale = 0.0f;
+				inline float exposure_min = 0.0f;
+				inline float exposure_max = 0.0f;
+			};
+
+			namespace brightness
+			{
+				inline bool enable = false;
+				inline float amount = 1.0f;
+			};
+
+			namespace fullbright
+			{
+				inline bool enable = false;
+			};
+
+			namespace particles
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace skybox
+			{
+				inline bool enable = false;
+				inline int style = 0;
+			};
+
+			namespace world_modulation
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace props_modulation
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace skybox_modulation
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace ragdoll
+			{
+				inline bool enable = false;
+				inline int style = 0;
+			};
 		};
 
-		inline bool fog = false;
-		inline float fog_start = 0.0f;
-		inline float fog_end = 3000.0f;
-		inline float fog_density = 1.0f;
-		inline float fog_color[3]{ 1.f, 1.f, 1.f };
-		inline bool shadow = false;
-		inline float shadow_x = 200.0f;
-		inline float shadow_y = 300.0f;
-		inline float shadow_z = -600.0f;
-		inline bool bloom = false;
-		inline float bloom_scale = 0.0f;
-		inline float bloom_exposure_min = 0.0f;
-		inline float bloom_exposure_max = 0.0f;
-		inline bool brightness = false;
-		inline float brightness_amount = 1.0f;
-		inline bool fullbright = false;
-		inline bool particles = false;
-		inline float particles_color[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline int skybox;
-		inline float world_color[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline float sky_color[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline bool world_modulate = false;
-		inline bool change_flashalpha = false;
-		inline int flashalpha = 100;
-		inline bool nosmoke = false;
-		inline bool nopostproccesing = false;
-		inline bool dlight = false;
-		inline float dlight_radius = 25.0f;
-		inline float dlight_clr[3]{ 1.f, 1.f, 1.f };
-		inline bool ragdoll = false;
-		inline int ragdoll_style = 0;
+		namespace post_processing
+		{
+			inline bool enable = false;
+		};
+
+		namespace player_model
+		{
+			inline bool enable = false;
+		};
+
+		namespace player_sleeves
+		{
+			inline bool enable = false;
+		};
+
+		namespace scope
+		{
+			inline bool enable = false;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+		};
+
+		namespace flash
+		{
+			inline bool enable = false;
+			inline bool full = false;
+			inline int alpha = 100;
+		};
+
+		namespace smoke
+		{
+			inline bool enable = false;
+		};
+
+		namespace panorama_blur
+		{
+			inline bool enable = false;
+		};
 	}
 
 	namespace chams {
@@ -517,7 +686,7 @@ namespace c {
 
 		inline int sub_indi_size = 12;
 		inline int sub_indi_font = 0;
-		inline bool sub_indi_font_flag[11] = { false, false, false, false, false, false, false, false, false, true, false };
+		inline bool sub_indi_font_flag[11] = { false, false, false, true, false, false, true, false, true, true, false };
 
 		inline int scene_font = 0;
 		inline int scene_size = 12;
@@ -534,6 +703,10 @@ namespace c {
 		inline int esp_sub_font = 0;
 		inline int esp_sub_size = 9;
 		inline bool esp_sub_flag[11] = { false, false, false, true, false, false, true, false, true, true, false };
+
+		inline int debug_information_font = 0;
+		inline int debug_information_size = 32;
+		inline bool debug_information_flag[11] = { false, false, false, true, false, false, true, false, true, true, false };
 	}
 
 	inline std::vector<std::string> configs;

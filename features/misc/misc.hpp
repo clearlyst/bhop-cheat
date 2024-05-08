@@ -24,6 +24,8 @@ namespace features::misc
 	void recoil_crosshair();
 	void sniper_crosshair();
 	void spectators_list();
+	void spread_circle();
+	void big_scene_indicators();
 	void hit_info(i_game_event* event);
 
 	namespace hitmarker 
