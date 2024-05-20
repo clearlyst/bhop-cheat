@@ -12,6 +12,7 @@ void __stdcall sdk::hooks::frame_stage_notify::frame_stage_notify( int stage ) {
 	if (stage == frame_render_start) {
 		features::misc::force_crosshair();
 		features::misc::recoil_crosshair();
+		features::misc::preserve_killfeed();
 		features::visuals::flashalpha();
 		features::visuals::skybox_changer(frame_render_start);
 		features::visuals::nosmoke();

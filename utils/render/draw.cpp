@@ -45,14 +45,14 @@ void imgui_render::setup_font()
 	menu::switch_font_cfg(esp_font_flag, c::fonts::esp_flag);
 	menu::switch_font_cfg(sub_esp_flag, c::fonts::esp_sub_flag);
 	cfg_icon.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_NoHinting;
-	menu_font_flag.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_MonoHinting | ImGuiFreeTypeBuilderFlags_Monochrome;
+	menu_font_flag.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_MonoHinting | ImGuiFreeTypeBuilderFlags_Monochrome | ImGuiFreeTypeBuilderFlags_Bitmap;
 
-	fonts::menu_font_thin = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahoma.ttf", 12.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-	fonts::menu_font_bold = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahomabd.ttf", 12.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-	fonts::scene_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_indicator.c_str(), c::fonts::scene_size, &scene_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-	fonts::sub_scene_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_indicator.c_str(), c::fonts::scene_sub_size, &sub_scene_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-	fonts::indicator_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_scene.c_str(), c::fonts::indi_size, &indicators_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-	fonts::sub_indicator_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_scene.c_str(), c::fonts::sub_indi_size, &sub_indicators_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::menu_font_thin = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahoma.ttf", 9.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::menu_font_bold = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahomabd.ttf", 9.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::scene_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_scene.c_str(), c::fonts::scene_size, &scene_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::sub_scene_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_scene.c_str(), c::fonts::scene_sub_size, &sub_scene_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::indicator_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_indicator.c_str(), c::fonts::indi_size, &indicators_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::sub_indicator_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_indicator.c_str(), c::fonts::sub_indi_size, &sub_indicators_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::esp_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_esp.c_str(), c::fonts::esp_size, &esp_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::sub_esp_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_esp.c_str(), c::fonts::esp_sub_size, &sub_esp_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::icon_font = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(icon_font, icon_font_size, 12.0f, &cfg_icon, ranges);
@@ -83,10 +83,10 @@ void imgui_render::reload_setup_font()
 	menu::switch_font_cfg(esp_font_flag, c::fonts::esp_flag);
 	menu::switch_font_cfg(sub_esp_flag, c::fonts::esp_sub_flag);
 	cfg_icon.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_NoHinting;
-	menu_font_flag.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_MonoHinting | ImGuiFreeTypeBuilderFlags_Monochrome;
+	menu_font_flag.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_MonoHinting | ImGuiFreeTypeBuilderFlags_Monochrome | ImGuiFreeTypeBuilderFlags_Bitmap;
 
-	fonts::menu_font_thin = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahoma.ttf", 12.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-	fonts::menu_font_bold = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahomabd.ttf", 12.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::menu_font_thin = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahoma.ttf", 9.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+	fonts::menu_font_bold = ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\tahomabd.ttf", 9.0f, &menu_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::scene_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_scene.c_str(), c::fonts::scene_size, &scene_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::sub_scene_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_sub_scene.c_str(), c::fonts::scene_sub_size, &sub_scene_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
 	fonts::indicator_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(fonts::font_directory_indicator.c_str(), c::fonts::indi_size, &indicators_font_flag, ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
@@ -338,7 +338,7 @@ void fonts::reset_fonts( ) {
 	c::fonts::debug_information_font = 0;
 
 	c::fonts::indi_size = 28;
-	c::fonts::sub_indi_size = 12;
+	c::fonts::sub_indi_size = 9;
 	c::fonts::esp_size = 9;
 	c::fonts::esp_sub_size = 9;
 	c::fonts::scene_size = 12;

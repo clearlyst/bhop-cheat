@@ -26,6 +26,7 @@ namespace features::misc
 	void spectators_list();
 	void spread_circle();
 	void big_scene_indicators();
+	void preserve_killfeed();
 	void hit_info(i_game_event* event);
 
 	namespace hitmarker 

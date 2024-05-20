@@ -114,6 +114,15 @@ void features::visuals::particles()
 	{
 		interfaces::console->get_convar("r_3dsky")->set_value(r_3dsky);
 	}
+
+	if (c::misc::sv_cheats::enable)
+	{
+		interfaces::console->get_convar("sv_cheats")->set_value(1);
+	}
+	else
+	{
+		interfaces::console->get_convar("sv_cheats")->set_value(0);
+	}
 }
 
 void features::visuals::entities_ragdoll()

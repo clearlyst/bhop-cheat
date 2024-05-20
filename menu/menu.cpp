@@ -650,6 +650,11 @@ void visuals() {
                 {
                     ImGui::Keybind("free camera key", &c::misc::freecam_key, &c::misc::freecam_key_s);
                 }
+                ImGui::Checkbox("preverse killfeed", &c::misc::preverse_killfeed::enable);
+                if (c::misc::preverse_killfeed::enable)
+                {
+                    ImGui::SliderFloat("time", &c::misc::preverse_killfeed::time, 0.0f, 10.0f, ("%.2f"));
+                }
 
                 ImGui::Separator();
 
@@ -1136,7 +1141,7 @@ void miscellaneous() {
             ImGui::Checkbox("clan tag", &c::misc::misc_clantag_spammer);
             if (c::misc::misc_clantag_spammer) {
                 ImGui::Text("type");
-                ImGui::Combo("##cltype", &c::misc::misc_clantag_type, "static\0animated custom\0synchronized");
+                ImGui::Combo("##cltype", &c::misc::misc_clantag_type, "static\0animated custom\0synchronized\0");
                 if (c::misc::misc_clantag_type == 1) {
                     ImGui::Checkbox("reverse rolling direction", &c::misc::misc_clantag_rotation);
                     ImGui::SliderFloat("speed", &c::misc::misc_clantag_speed, 0.1f, 2.0f, ("%.2f"));
@@ -1168,14 +1173,15 @@ void miscellaneous() {
 
             ImGui::Separator();
 
-            ImGui::Checkbox("practice binds", &c::misc::practice);
+            ImGui::Checkbox("offline practice tool", &c::misc::practice);
             if (c::misc::practice)
 			{
                 ImGui::Text("save position");
                 ImGui::Keybind(("save pos"), &c::misc::savepos, &c::misc::savepos_s);
-                ImGui::Text("load position");
+                ImGui::Text("teleport to position");
                 ImGui::Keybind(("load pos"), &c::misc::loadpos, &c::misc::loadpos_s);
             }
+            ImGui::Checkbox("enable sv cheats", &c::misc::sv_cheats::enable);
             ImGui::Checkbox("mouse fix delta", &c::misc::mousefix);
 
             ImGui::PopStyleVar();
@@ -1252,7 +1258,7 @@ void font() {
 
                 if (fonts::selected_font_index_sub_indi >= 0) {
                     if (menu::fonts[fonts::selected_font_index_sub_indi] == "default") {
-                        fonts::font_directory_sub_indicator = "C:/windows/fonts/tahomabd.ttf";
+                        fonts::font_directory_sub_indicator = "C:/windows/fonts/tahoma.ttf";
                     }
                     else {
                         fonts::font_directory_sub_indicator = "C:/windows/fonts/" + menu::fonts[fonts::selected_font_index_sub_indi];

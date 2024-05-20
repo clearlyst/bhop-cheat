@@ -27,11 +27,6 @@ bool __stdcall sdk::hooks::create_move::create_move(float sampletime, c_usercmd*
 	features::misc::checkpoint_system();
 	features::movement::graphs_data();
 
-	if (features::movement::should_edgebug && features::movement::should_duck)
-	{
-		cmd->buttons |= in_duck;
-	}
-
 	if (c::movement::fastduck)
 	{
 		cmd->buttons |= in_bullrush;

@@ -300,7 +300,6 @@ void features::misc::clantag_spammer()
 {
 	if (!c::misc::misc_clantag_spammer)
 	{
-		apply_clan_tag(xs(" "), xs(" "));
 		return;
 	}
 
@@ -846,12 +845,12 @@ void features::misc::big_scene_indicators()
 		return;
 	}
 
-	int offset_bottom;
-
 	auto text_size = im_render.get_text_size("aim", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
-	auto sp_text_size = im_render.get_text_size("save p", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
+	auto sp_text_size = im_render.get_text_size("can sp", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
 	auto tp_text_size = im_render.get_text_size("can tp", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
 	auto warn_text_size = im_render.get_text_size("setup sv_cheats at true", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
+
+	int offset_bottom = 0;
 
 	if (c::misc::debug_information::can_fire::enable && c::aimbot::enable)
 	{
@@ -868,11 +867,45 @@ void features::misc::big_scene_indicators()
 		}
 		else
 		{
-			im_render.text((g::width - 5) - sp_text_size, (g::height / 2) + offset_bottom, c::fonts::debug_information_size, fonts::debug_information_font, "save p", false, color_t(1.0f, 1.0f, 1.0f, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
-
-			offset_bottom += c::fonts::debug_information_size + 3;
-
-			im_render.text((g::width - 5) - tp_text_size, (g::height / 2) + offset_bottom, c::fonts::debug_information_size, fonts::debug_information_font, "can tp", false, color_t(1.0f, 1.0f, 1.0f, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+			im_render.text((g::width - 5) - sp_text_size, (g::height / 2) + offset_bottom, c::fonts::debug_information_size, fonts::debug_information_font, "can sp", false, color_t(1.0f, 1.0f, 1.0f, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+			im_render.text((g::width - 5) - tp_text_size, (g::height / 2) + (offset_bottom * 2), c::fonts::debug_information_size, fonts::debug_information_font, "can tp", false, color_t(1.0f, 1.0f, 1.0f, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
 		}
 	}
+}
+
+void features::misc::preserve_killfeed()
+{
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	static uintptr_t* death_notice = nullptr;
+
+	if (!death_notice)
+		death_notice = find_hud_element("CCSGO_HudDeathNotice");
+
+	if (death_notice)
+	{
+		auto local_death_notice = (float*)((uintptr_t)death_notice + 0x50);
+
+		if (local_death_notice)
+			*local_death_notice = c::misc::preverse_killfeed::enable ? c::misc::preverse_killfeed::time : 1.5f;
+
+		if (g::round_start)
+		{
+			g::round_start = false;
+
+			using Fn = void(__thiscall*)(uintptr_t);
+			static auto clear_notices = (Fn)find_pattern_2("client.dll", "55 8B EC 83 EC 0C 53 56 8B 71 58");
+
+			clear_notices((uintptr_t)death_notice - 0x14);
+		}
+	}
+
 }

@@ -10,6 +10,23 @@ namespace features::movement
 	inline int saved_tick[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	inline bool should_duck;
 	inline bool should_edgebug;
+	inline bool should_pixelsurf;
+
+	struct ps_data_t {
+		bool predicted_ps = false;
+		bool pixelsurfing = false;
+		bool pixelducking = false;
+		int counter = 0;
+		int pixeltick = 0;
+		float last_set = 0.f;
+		c_usercmd* pixelsurf_cmd = nullptr;
+		vec3_t view_point = vec3_t(0, 0, 0);
+		float forward_move = 0.f;
+		float side_move = 0.f;
+	};
+
+	inline ps_data_t ps_data;
+
 	void bhop(c_usercmd* cmd);
 	void delay_hop(c_usercmd* cmd);
 	void jump_bug(c_usercmd* cmd);
@@ -66,7 +83,6 @@ namespace features::movement
 		bool on_ground;
 	};
 
-	inline pixelsurf_data_t ps_data;
 	inline std::vector<velocity_data_t> velocity_data;
 	inline std::vector<stamina_data_t> stamina_data;
 	inline std::unordered_map<std::string, indicator> m_indicators;

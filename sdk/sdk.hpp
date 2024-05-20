@@ -1507,5 +1507,6 @@ namespace g {
 	inline vec3_t origin;
 	inline c_usercmd* cmd = nullptr;
 	inline int width, height = 0;
-	inline bool send_packet;
+	inline bool send_packet = false;
+	inline bool round_start = false;
 }

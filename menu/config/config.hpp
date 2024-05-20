@@ -254,6 +254,17 @@ namespace c {
 			};
 		};
 
+		namespace preverse_killfeed
+		{
+			inline bool enable = false;
+			inline float time = 2.0f;
+		};
+
+		namespace sv_cheats
+		{
+			inline bool enable = false;
+		};
+
 		inline bool spectators_list = false;
 		inline bool spectators_list_mode = false;
 		inline bool spectators_list_avatars = false;
@@ -684,7 +695,7 @@ namespace c {
 		inline int indi_font = 0;
 		inline bool indi_font_flag[11] = { false, false, false, false, false, false, false, false, false, true, false };
 
-		inline int sub_indi_size = 12;
+		inline int sub_indi_size = 9;
 		inline int sub_indi_font = 0;
 		inline bool sub_indi_font_flag[11] = { false, false, false, true, false, false, true, false, true, true, false };
 

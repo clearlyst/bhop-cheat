@@ -58,6 +58,9 @@ void sdk::hooks::init( ) {
 	if (MH_CreateHook(find_pattern(("engine.dll"), ("8B 0D ? ? ? ? 56 83 B9 ? ? ? ? ? 7E 6E")), &check_for_pure_server_white_list::check_for_pure_server_white_list, (void**)&check_for_pure_server_white_list::ofunc))
 		printf(("check for pure server white list hook failed.\n"));
 
+	if (MH_CreateHook(find_pattern(("engine.dll"), ("8B 0D ? ? ? ? 81 F9 ? ? ? ? 75 60 F3 0F 10 05 ? ? ? ? 0F 2E 05 ? ? ? ? 8B 15 ? ? ? ? 9F F6 C4 44 7A 1A 39 15 ? ? ? ? 75 12 A1 ? ? ? ? 33 05 ? ? ? ? A9 ? ? ? ? 74 1D 8B 0D ? ? ? ? 85 C9 74 19 8B 01 68 ? ? ? ? FF 90 ? ? ? ? 8B 15 ? ? ? ? 8B 0D ? ? ? ? 81 F2 ? ? ? ? EB 0D 8B 01 FF 50 34 8B 0D ? ? ? ? 8B D0 83 FA 01 0F")), &is_using_static_prop_debug_modes::is_using_static_prop_debug_modes, (void**)&is_using_static_prop_debug_modes::ofunc))
+		printf(("is using static prop debug modes hook failed.\n"));
+
 	if (MH_CreateHook(find_pattern(("materialsystem.dll"), ("55 8B EC 83 EC ? 56 8B F1 8A 46")), &get_color_modulation::get_color_modulation, (void**)&get_color_modulation::ofunc))
 		printf(("get color modulation hook failed.\n"));
 
@@ -69,9 +72,6 @@ void sdk::hooks::init( ) {
 
 	if (MH_CreateHook(find_pattern(("client.dll"), ("55 8B EC 83 E4 F8 B8 ? ? ? ? E8 ? ? ? ? 53 8B D9 8B 0D")), &push_notice::push_notice, (void**)&push_notice::ofunc))
 		printf(("push notice hook failed.\n"));
-
-	if (MH_CreateHook(find_pattern(("client.dll"), ("55 8B EC 81 EC ? ? ? ? 53 8B D9 56 57 8B 53 5C")), &set_visuals_data::set_visuals_data, (void**)&set_visuals_data::ofunc))
-		printf(("set visuals data hook failed.\n"));
 
 	if (MH_CreateHook(find_pattern(("client.dll"), ("55 8B EC 83 E4 F8 83 EC 30 56 57 8B F9 0F 28 E1 8B 0D ? ? ? ? F3 0F 11 64 24 ? 89 7C 24 18 8B 81")), &particle::simulations, (void**)&particle::ofunc))
 		printf(("set particles simulations hook failed.\n"));
@@ -86,9 +86,9 @@ void sdk::hooks::init( ) {
 	events.setup();
 
 	if (!window)
-		printf("ozungaware | failed to get game window\n");
+		printf("failed to get game window\n");
 	else
-		printf("ozungaware | found game window\n");
+		printf("found game window\n");
 
 	wndproc_original = reinterpret_cast< WNDPROC >( SetWindowLongW( window, GWL_WNDPROC, reinterpret_cast< LONG >( wndproc ) ) );
 }

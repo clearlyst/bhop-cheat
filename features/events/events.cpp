@@ -16,6 +16,11 @@ void hooked_events::fire_game_event(i_game_event* event)
 		features::misc::hitmarker::event(event);
 		features::misc::hit_info(event);	
 	}
+
+	if (!strcmp(event_name, "round_start"))
+	{
+		g::round_start = true;
+	}
 }
 
 int hooked_events::get_event_debug_id(void) {
@@ -25,6 +30,7 @@ int hooked_events::get_event_debug_id(void) {
 void hooked_events::setup() {
 	debug_id = EVENT_DEBUG_ID_INIT;
 	interfaces::event_manager->add_listener(this, "player_hurt", false);
+	interfaces::event_manager->add_listener(this, "round_start", false);
 
 	printf("ozungaware | events initialized!\n");
 }

@@ -634,6 +634,7 @@ void features::movement::strafe_optimizer(c_usercmd* cmd)
 
 	if ((velocity.length_2d() > c::movement::strafe_optimizer_minimum_speed) || (velocity.length_2d() < c::movement::strafe_optimizer_maximum_speed))
 	{
+		prediction::updatepacket();
 
 		float mouse_yaw_factor = m_yaw->get_float();
 		float mouse_sensitivity = sensitivity->get_float();
@@ -998,6 +999,29 @@ void features::movement::auto_pixelsurf(c_usercmd* cmd)
 		return;
 	}
 
+	// surf types 
+	// FL_IN_AIR_STAND                    256
+	// FL_IN_AIR_CROUCHED                 262
+
+	if ((g::local->flags() & fl_onground) || (prediction::flags & fl_onground))
+	{
+		return;
+	}
+
+	if (ps_data.pixelsurfing) 
+		cmd->buttons |= in_duck;
+	else
+		cmd->buttons &= ~in_duck;
+
+	if (g::local->velocity().z == -6.25f && prediction::velocity.z == -6.25f)
+	{
+		ps_data.pixelsurfing = true;
+	}
+	else
+	{
+		ps_data.pixelsurfing = false;
+	}
+	
 }
 
 color_t interpolate(const color_t& first_color, const color_t& second_color, const float time)
@@ -1481,18 +1505,18 @@ void features::movement::indicators()
 
 void features::movement::graphs_data()
 {
-	if (!c::movement::indicators::graphs::velocity::enable || !c::movement::indicators::graphs::stamina::enable) {
+	if (!c::movement::indicators::graphs::velocity::enable) {
 		if (!velocity_data.empty())
 		{
 			velocity_data.clear();
 		}
+	}
 
+	if (!c::movement::indicators::graphs::stamina::enable) {
 		if (!stamina_data.empty())
 		{
 			stamina_data.clear();
 		}
-
-		return;
 	}
 
 	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game() || !g::local || !g::local->is_alive())
@@ -1512,11 +1536,13 @@ void features::movement::graphs_data()
 
 	if (velocity_data.size() > 255)
 	{
+		velocity_data.erase(velocity_data.begin());
 		velocity_data.pop_back();
 	}
 
 	if (stamina_data.size() > 255)
 	{
+		stamina_data.erase(stamina_data.begin());
 		stamina_data.pop_back();
 	}
 
@@ -1568,31 +1594,34 @@ void features::movement::velocity_graph_indicator()
 		const auto current = velocity_data[i];
 		const auto next = velocity_data[i + 1];
 
-		const auto clamped_current_speed = std::clamp(current.speed, 0, 450);
-		const auto clamped_next_speed = std::clamp(next.speed, 0, 450);
+		const auto clamped_current_speed = std::clamp(current.speed, 0, 400);
+		const auto clamped_next_speed = std::clamp(next.speed, 0, 400);
 
-		bool take_off = !current.on_ground && next.on_ground;
+		bool jumped = !current.on_ground && next.on_ground;
+		bool landed = current.on_ground && !next.on_ground;
 		const auto jump_bug_detected = !current.was_in_prediction && current.jumpbugged;
 
-		float current_speed = (clamped_current_speed * 75 / 320);
-		float next_speed = (clamped_next_speed * 75 / 320);
+		float current_speed = (clamped_current_speed * 75 / 400);
+		float next_speed = (clamped_next_speed * 75 / 400);
 
-		float max_val = (int)velocity_data.size() - 1;
-		float val = (int)i;
-		int alpha = c::movement::indicators::graphs::fade ? (fabs(max_val - fabs(val - max_val / 2) * 2.f)) : 255;
+		float max_val = velocity_data.size() - 1;
+		float val = i;
 
-		color_t color = color_t(c::movement::indicators::graphs::velocity::color[0], c::movement::indicators::graphs::velocity::color[1], c::movement::indicators::graphs::velocity::color[2], (alpha / 255.f));
+		int fade_alpha = c::movement::indicators::graphs::fade ? static_cast<int>(fabs(max_val - fabs(val - max_val / 2) * 2.0f)) : 255;
+
+		color_t color = color_t(c::movement::indicators::graphs::velocity::color[0], c::movement::indicators::graphs::velocity::color[1], c::movement::indicators::graphs::velocity::color[2], (fade_alpha / 255.f));
 
 		im_render.drawline(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - current_speed, graph_position.x - i * c::movement::indicators::graphs::size, graph_position.y - next_speed, color, 1.0f);
 
-		if (take_off && c::movement::indicators::graphs::velocity::draw_velocity)
+		if (jumped && c::movement::indicators::graphs::velocity::draw_velocity)
 		{
-			im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - next_speed - (c::fonts::sub_indi_size + 3), c::fonts::sub_indi_size, fonts::sub_indicator_font, std::to_string((int)round(current.speed)).c_str(), true, color_t(1.0f, 1.0f, 1.0f, (alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
+			im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - next_speed - (c::fonts::sub_indi_size + 9), c::fonts::sub_indi_size, fonts::sub_indicator_font, std::to_string((int)round(current.speed)).c_str(), true, color_t(1.0f, 1.0f, 1.0f, (fade_alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
+			//im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - current_speed - (c::fonts::sub_indi_size + 21), c::fonts::sub_indi_size, fonts::sub_indicator_font, std::to_string((int)round(next.speed)).c_str(), true, color_t(1.0f, 1.0f, 1.0f, (alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
 		}
 
 		if (jump_bug_detected && c::movement::indicators::graphs::velocity::draw_jumpbug) 
 		{
-			im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - current_speed - (c::fonts::sub_indi_size + 5), c::fonts::sub_indi_size, fonts::sub_indicator_font, "jb", true, color_t(1.0f, 1.0f, 1.0f, (alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
+			im_render.text(graph_position.x - (i - 1) * c::movement::indicators::graphs::size, graph_position.y - current_speed - (c::fonts::sub_indi_size + 9), c::fonts::sub_indi_size, fonts::sub_indicator_font, "jb", true, color_t(1.0f, 1.0f, 1.0f, (fade_alpha / 255.f)), c::fonts::sub_indi_font_flag[9], c::fonts::sub_indi_font_flag[10]);
 		}
 	}
 }
@@ -1633,8 +1662,9 @@ void features::movement::stamina_graph_indicator()
 		float current_speed = (clamped_current_speed * 25 / 35);
 		float next_speed = (clamped_next_speed * 25 / 35);
 
-		float max_val = (int)stamina_data.size() - 1;
-		float val = (int)i;
+		float max_val = velocity_data.size() - 1;
+		float val = i;
+
 		int alpha = c::movement::indicators::graphs::fade ? fabs(max_val - fabs(val - max_val / 2) * 2.f) : 255;
 
 		color_t color = color_t(c::movement::indicators::graphs::stamina::color[0], c::movement::indicators::graphs::stamina::color[1], c::movement::indicators::graphs::stamina::color[2], (alpha / 255.f));

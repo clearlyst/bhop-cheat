@@ -68,7 +68,7 @@ namespace fonts {
 	inline std::string font_directory_scene = "C:/windows/fonts/tahomabd.ttf";
 	inline std::string font_directory_sub_scene = "C:/windows/fonts/tahomabd.ttf";
 	inline std::string font_directory_indicator = "C:/windows/fonts/tahomabd.ttf";
-	inline std::string font_directory_sub_indicator = "C:/windows/fonts/tahomabd.ttf";
+	inline std::string font_directory_sub_indicator = "C:/windows/fonts/tahoma.ttf";
 	inline std::string font_directory_esp = "C:/windows/fonts/tahoma.ttf";
 	inline std::string font_directory_sub_esp = "C:/windows/fonts/tahoma.ttf";
 	inline std::string font_directory_debug_information = "C:/windows/fonts/tahomabd.ttf";

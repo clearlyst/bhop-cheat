@@ -116,6 +116,12 @@ namespace sdk {
 			void __fastcall get_color_modulation(i_material* material, void* edx, float* r, float* g, float* b);
 		}
 
+		namespace is_using_static_prop_debug_modes {
+			using fn = bool(__stdcall*)();
+			inline fn ofunc;
+			bool __stdcall is_using_static_prop_debug_modes();
+		}
+
 		namespace get_alpha_modulation {
 			using fn = float(__fastcall*)(i_material*, void*);
 			inline fn ofunc;
