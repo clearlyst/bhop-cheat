@@ -9,13 +9,14 @@
 #include "../includes/imgui/imgui_internal.h"
 #include "../features/notifications/notifications.hpp"
 
-static const char* mov_toggle_type[] = { "always on", "on hotkey", "toggle hotkey" };
+static const char* mov_toggle_type[3] = { "always on", "on hotkey", "toggle hotkey" };
 static const char* key_back[4] = { "-w", "-s", "-a", "-d" };
 static const char* key_back_for[4] = { "ej", "mj", "lj", "lej" };
 static const char* edge_jump_for[3] = { "lj", "mj", "lej" };
 static const char* detect_chat_for[3] = { "jb", "eb", "ps" };
 static const char* indicators[14] = { "jb", "ej", "lj", "eb", "mj", "sh", "ps", "al", "ad", "as", "bb", "msl", "so", "null" };
 const char* font_flags[] = { "no hinting","no autohint","light hinting","mono hinting","bold","italic","no antialiasing","load color","bitmap","dropshadow","outline" };
+const char* thirdperson[] = { "scoped", "nade", "knife", "zeus" };
 const char* fnt_tab[] = { "main indicator font", "sub indicator font", "esp font", "sub esp font", "scene font", "sub scene font" };
 static const char* materials[] = { "regular", "flat", "crystal", "pearlescent", "reverse pearlescent", "fog", "damascus", "model" };
 static const char* chams_overlay_types[] = { "glow", "outline", "metallic", "snow" };
@@ -410,7 +411,7 @@ void visuals() {
                             ImGui::ColorEdit4("##oofcolor", c::visuals::players::colors::out_of_view, w_alpha);
                         }
                         ImGui::SliderFloat("size", &c::visuals::players::out_of_view::size, 0.0f, 50.0f, ("%.2f"));
-                        ImGui::SliderFloat("distance", &c::visuals::players::out_of_view::distance, 0.0f, 300.0f, ("%.2f"));
+                        ImGui::SliderFloat("distance", &c::visuals::players::out_of_view::distance, 0.0f, 600.0f, ("%.2f"));
                     }
                     ImGui::Checkbox("emitted sound", &c::visuals::players::emitted_sound::enable);
                     if (c::visuals::players::emitted_sound::enable)
@@ -426,16 +427,12 @@ void visuals() {
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0));
 
-                ImGui::Checkbox("dropped weapon box (wip)", &c::visuals::players::dropped_weapon::box::enable);
+                ImGui::Checkbox("dropped weapon box", &c::visuals::players::dropped_weapon::box::enable);
                 if (c::visuals::players::dropped_weapon::box::enable)
                 {
-                    if (c::visuals::players::colors::custom)
-                    {
-                        ImGui::SameLine();
-                        ImGui::ColorEdit4("##entity box color", c::visuals::players::colors::box, w_alpha);
-                        ImGui::SameLine();
-                        ImGui::ColorEdit4("##entity outline box color", c::visuals::players::colors::box_outline, w_alpha);
-                    }
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##dropped weapon box color", c::visuals::players::dropped_weapon::box::color, w_alpha);
+
                     ImGui::Text("box type");
                     ImGui::Combo("##boxtype", &c::visuals::players::dropped_weapon::box::type, "filled\0corner");
                     ImGui::Text("outline");
@@ -447,22 +444,40 @@ void visuals() {
                     }
                 }
                 ImGui::Checkbox("dropped weapon name", &c::visuals::players::dropped_weapon::text::enable);
-                ImGui::Checkbox("dropped weapon icon", &c::visuals::players::dropped_weapon::icon::enable);
-                ImGui::Checkbox("dropped weapon ammo text", &c::visuals::players::dropped_weapon::ammo_text::enable);
-                if (c::visuals::players::dropped_weapon::text::enable || c::visuals::players::dropped_weapon::icon::enable || c::visuals::players::dropped_weapon::ammo_text::enable)
+                if (c::visuals::players::dropped_weapon::text::enable)
                 {
-                    ImGui::Text("dropped weapon text color");
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("##dropped weapon color", c::visuals::players::dropped_weapon::color_text, w_alpha);
+                    ImGui::ColorEdit4("##dropped weapon name color", c::visuals::players::dropped_weapon::text::color, w_alpha);
                 }
-                ImGui::Checkbox("dropped weapon ammo bar (wip)", &c::visuals::players::dropped_weapon::ammo_bar::enable);
-                ImGui::Checkbox("thrown grenade name", &c::visuals::players::thrown_grenade::text::enable);
-                ImGui::Checkbox("thrown grenade icon", &c::visuals::players::thrown_grenade::icon::enable);
-                if (c::visuals::players::thrown_grenade::text::enable || c::visuals::players::thrown_grenade::icon::enable)
+                ImGui::Checkbox("dropped weapon icon", &c::visuals::players::dropped_weapon::icon::enable);
+                if (c::visuals::players::dropped_weapon::icon::enable)
                 {
-                    ImGui::Text("thrown grenade color");
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("##thrown grenade color", c::visuals::players::thrown_grenade::color, w_alpha);
+                    ImGui::ColorEdit4("##dropped weapon icon color", c::visuals::players::dropped_weapon::icon::color, w_alpha);
+                }
+                ImGui::Checkbox("dropped weapon ammo text", &c::visuals::players::dropped_weapon::ammo_text::enable);
+                if (c::visuals::players::dropped_weapon::ammo_text::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##dropped weapon ammo text color", c::visuals::players::dropped_weapon::ammo_text::color, w_alpha);
+                }
+                ImGui::Checkbox("dropped weapon ammo bar", &c::visuals::players::dropped_weapon::ammo_bar::enable);
+                if (c::visuals::players::dropped_weapon::ammo_bar::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##dropped weapon ammo bar color", c::visuals::players::dropped_weapon::ammo_bar::color, w_alpha);
+                }
+                ImGui::Checkbox("thrown grenade name", &c::visuals::players::thrown_grenade::text::enable);
+                if (c::visuals::players::thrown_grenade::text::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##thrown grenade color", c::visuals::players::thrown_grenade::text::color, w_alpha);
+                }
+                ImGui::Checkbox("thrown grenade icon", &c::visuals::players::thrown_grenade::icon::enable);
+                if (c::visuals::players::thrown_grenade::icon::enable)
+                {
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##thrown grenade color", c::visuals::players::thrown_grenade::icon::color, w_alpha);
                 }
                 ImGui::PopStyleVar();
             }}
@@ -589,6 +604,8 @@ void visuals() {
                     ImGui::Checkbox("weapon ready to fire", &c::misc::debug_information::can_fire::enable);
                     if (c::misc::debug_information::can_fire::enable)
                     {
+                        ImGui::Text("style");
+                        ImGui::Combo("##wrtfs", &c::misc::debug_information::can_fire::style, "can shoot\0aim\0");
                         ImGui::Text("ready to shoot");
                         ImGui::SameLine();
                         ImGui::ColorEdit4("##active color", c::misc::debug_information::can_fire::active_color, no_alpha);
@@ -650,10 +667,19 @@ void visuals() {
                 {
                     ImGui::Keybind("free camera key", &c::misc::freecam_key, &c::misc::freecam_key_s);
                 }
+                ImGui::Checkbox("third person", &c::visuals::world::thirdperson::enable);
+                if (c::visuals::world::thirdperson::enable)
+                {
+                    ImGui::Keybind("##third person key", &c::visuals::world::thirdperson::key, &c::visuals::world::thirdperson::key_s);
+                    ImGui::Checkbox("when spectating", &c::visuals::world::thirdperson::when_spectating);
+                    ImGui::Text("turn off while");
+                    ImGui::MultiCombo("##tptof", thirdperson, c::visuals::world::thirdperson::turn_off_while, 4);
+                    ImGui::SliderInt("distance", &c::visuals::world::thirdperson::distance, 0, 300, ("%.d"));
+                }
                 ImGui::Checkbox("preverse killfeed", &c::misc::preverse_killfeed::enable);
                 if (c::misc::preverse_killfeed::enable)
                 {
-                    ImGui::SliderFloat("time", &c::misc::preverse_killfeed::time, 0.0f, 10.0f, ("%.2f"));
+                    ImGui::SliderFloat("time##preverse killfeed", &c::misc::preverse_killfeed::time, 0.0f, 10.0f, ("%.2f"));
                 }
 
                 ImGui::Separator();
@@ -664,6 +690,39 @@ void visuals() {
                     ImGui::SameLine();
                     ImGui::ColorEdit4("##grenade prediction color", c::misc::nadepred_clr, no_alpha);
                 }
+                ImGui::Checkbox("bullet tracers (wip)", &c::misc::bullet_tracers::enable);
+                if (c::misc::bullet_tracers::enable)
+                {
+                    ImGui::SliderFloat("life time", &c::misc::bullet_tracers::time, 0.0f, 30.0f, ("%.2f"));
+
+                    ImGui::Text("local tracer color");
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##LTC", c::misc::bullet_tracers::local_entity_color, w_alpha);
+                    ImGui::Text("hurt enemy tracer color");
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##HETC", c::misc::bullet_tracers::local_hurt_entity_color, w_alpha);
+                    ImGui::Text("enemy tracer color");
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##ETC", c::misc::bullet_tracers::enemy_entity_color, w_alpha);
+                }
+                ImGui::Checkbox("impact boxes", &c::misc::bullet_impacts::enable);
+                if (c::misc::bullet_impacts::enable)
+                {
+                    ImGui::Checkbox("client", &c::misc::bullet_impacts::client::enable);
+                    if (c::misc::bullet_impacts::client::enable)
+                    {
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##client box color", c::misc::bullet_impacts::client::color, w_alpha);
+                    }
+                    ImGui::Checkbox("server", &c::misc::bullet_impacts::server::enable);
+                    if (c::misc::bullet_impacts::server::enable)
+                    {
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##server box color", c::misc::bullet_impacts::server::color, w_alpha);
+                    }
+                    ImGui::SliderFloat("time##impact boxes", &c::misc::bullet_impacts::time, 0.0f, 30.0f, ("%.2f"));
+                }
+
 
                 ImGui::Spacing();
 
@@ -693,6 +752,22 @@ void visuals() {
                     ImGui::SliderFloat("rotation x", &c::visuals::world::shadow::x, -1000.0f, 1000.0f, ("%.2f"));
                     ImGui::SliderFloat("rotation y", &c::visuals::world::shadow::y, -1000.0f, 1000.0f, ("%.2f"));
                     ImGui::SliderFloat("rotation z", &c::visuals::world::shadow::z, -1000.0f, 1000.0f, ("%.2f"));
+                }
+                ImGui::Checkbox("precipitation modulation", &c::visuals::world::weather::enable);
+                if (c::visuals::world::weather::enable)
+                {
+                    ImGui::Text("type of weather");
+                    ImGui::Combo("##tow", &c::visuals::world::weather::type, "rain\0snow\0rain storm\0ash\0");
+                    ImGui::Checkbox("custom density", &c::visuals::world::weather::custom_density);
+                    if (c::visuals::world::weather::custom_density)
+                    {
+                        ImGui::SliderFloat("density", &c::visuals::world::weather::density, 0.0f, 1000.0f, ("%.2f"));
+                    }
+                    ImGui::Checkbox("custom radius", &c::visuals::world::weather::custom_radius);
+                    if (c::visuals::world::weather::custom_radius)
+                    {
+                        ImGui::SliderFloat("radius", &c::visuals::world::weather::radius, -1000.0f, 5000.0f, ("%.2f"));
+                    }
                 }
                 ImGui::Checkbox("skybox modulation", &c::visuals::world::skybox::enable);
                 if (c::visuals::world::skybox::enable)
@@ -743,7 +818,22 @@ void visuals() {
                     ImGui::Text("style");
                     ImGui::Combo("##ragdoll", &c::visuals::world::ragdoll::style, "none\0from us\0to us\0to sky\0");
                 }
-
+                ImGui::Checkbox("aspect ratio", &c::visuals::world::aspect_ratio_modulation::enable);
+                if (c::visuals::world::aspect_ratio_modulation::enable)
+                {
+                    ImGui::SliderFloat("amount##ascrat", &c::visuals::world::aspect_ratio_modulation::amount, 0.0f, 2.0f, ("%.2f"));
+                }
+                ImGui::Checkbox("motion blur", &c::visuals::world::motionblur::enable);
+                if (c::visuals::world::motionblur::enable) {
+                    ImGui::Text("video adapter type");
+                    ImGui::Combo("##vat", &c::visuals::world::motionblur::video_adapter, "AMD\0NVIDIA\0INTEL\0");
+                    ImGui::Checkbox("forward enabled", &c::visuals::world::motionblur::forward_move_blur);
+                    ImGui::SliderFloat("strength", &c::visuals::world::motionblur::strength, 0.0f, 10.0f, " %.2f");
+                    ImGui::SliderFloat("falling intensity", &c::visuals::world::motionblur::falling_intensity, 0.0f, 20.0f, " %.2f");
+                    ImGui::SliderFloat("rotation intensity", &c::visuals::world::motionblur::rotate_intensity, 0.0f, 20.0f, " %.2f");
+                    ImGui::SliderFloat("falling min", &c::visuals::world::motionblur::falling_minimum, 0.0f, 50.0f, " %.2f");
+                    ImGui::SliderFloat("falling max", &c::visuals::world::motionblur::falling_maximum, 0.0f, 50.0f, " %.2f");
+                }
                 ImGui::Separator();
 
                 ImGui::Checkbox("remove/reduce flash", &c::visuals::flash::enable);
@@ -1102,6 +1192,12 @@ void miscellaneous() {
 
                     features::notification::run("refreshed config list", "#_print_refreshed", true, true, true);
                 }
+                if (ImGui::Button("unlock convars", ImVec2(-1, 15))) {
+                    features::misc::unlock_cvars();
+
+                    features::notification::run("unlocked convars", "#_print_unlock_convar", true, true, true);
+                }
+
 
                 ImGui::PopItemWidth();
                 ImGui::PopStyleVar();
@@ -1141,14 +1237,23 @@ void miscellaneous() {
             ImGui::Checkbox("clan tag", &c::misc::misc_clantag_spammer);
             if (c::misc::misc_clantag_spammer) {
                 ImGui::Text("type");
-                ImGui::Combo("##cltype", &c::misc::misc_clantag_type, "static\0animated custom\0synchronized\0");
-                if (c::misc::misc_clantag_type == 1) {
-                    ImGui::Checkbox("reverse rolling direction", &c::misc::misc_clantag_rotation);
+                ImGui::Combo("##cltype", &c::misc::misc_clantag_type, "none\0newline spam\0velocity\0static\0animated custom\0synchronized\0");
+                if (c::misc::misc_clantag_type == 3) {
+                    ImGui::Checkbox("reverse rolling direction", &c::misc::misc_clantag_reverse_rolling);
                     ImGui::SliderFloat("speed", &c::misc::misc_clantag_speed, 0.1f, 2.0f, ("%.2f"));
                     ImGui::Text("custom text");
                     ImGui::PushItemWidth(200.f);
                     ImGui::InputText("##clantagtext", c::misc::misc_clantag_text, IM_ARRAYSIZE(c::misc::misc_clantag_text));
                 }
+
+                /*
+                
+                if (ImGui::Button("update clantag"))
+                {
+                    g::clantag_update = true;
+                } 
+
+                */
             }
 
             ImGui::Separator();

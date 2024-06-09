@@ -20,12 +20,13 @@ struct bbox_t {
 };
 
 namespace features::visuals {
-	bool get_playerbox(player_t* entity, bbox_t& in);
+	bool get_player_box(player_t* entity, bbox_t& in);
+	bool get_entity_box(entity_t* entity, bbox_t& in);
 
 	void get_update_sounds();
 
 	void throwed_grenade(entity_t* entity);
-	void dropped_weapon(entity_t* entity);
+	void dropped_weapon(entity_t* entity, bbox_t bbox);
 
 	namespace dormant_system
 	{
@@ -94,6 +95,32 @@ namespace features::visuals {
 		void run();
 	}
 
+	namespace weather
+	{
+		struct precip_entity_t {
+			entity_t* m_entity;
+			i_client_networkable* m_networkable;
+			vec3_t m_mins;
+			vec3_t m_maxs;
+			vcollide_t m_collide;
+			bool m_collide_init;
+			int m_model_index;
+			int m_abs_model_index;
+			precipitation_type_t m_type;
+		};
+
+		void precipitation_update();
+		void precipitation_main(client_frame_stage_t stage, bool original_called);
+		void clean_up_precipitation();
+		void unload_precip_entity(precip_entity_t& precip);
+		void remove_unused_entities(precipitation_type_t type);
+		bool is_type_active(precipitation_type_t type);
+		void apply_weather_effect(precipitation_type_t type);
+		void create_precip_entity(precip_entity_t* ent_info, precipitation_type_t precip_mode);
+
+		inline std::list< precip_entity_t > m_precip_list;
+	}
+
 	void particles();
 	void entities_ragdoll();
 	void skybox_changer(client_frame_stage_t stage);
@@ -103,6 +130,8 @@ namespace features::visuals {
 	void dlights(player_t* entity);
 	void run_freecam(c_usercmd* cmd, vec3_t angles);
 	void freecam(view_setup_t* setup);
+	void motion_blur(view_setup_t* setup);
+	void thirdperson();
 }
 
 namespace features::grenade_prediction {

@@ -31,7 +31,7 @@ void features::visuals::glow::run()
 			continue;
 		}
 
-		if (client_class->class_id == ccsplayer)
+		if (client_class->class_id == C_CS_PLAYER)
 		{
 			const auto player = static_cast<player_t*>(glow.entity);
 

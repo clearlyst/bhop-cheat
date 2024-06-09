@@ -43,6 +43,48 @@ float vec3_t::normalize_float() {
 	return l;
 }
 
+constexpr auto RadPi = 3.14159265358979323846;
+constexpr auto DegPi = 180.0;
+
+template<typename T>
+T ToRadians(T degrees) {
+	return (degrees * (static_cast<T>(RadPi) / static_cast<T>(DegPi)));
+}
+
+#include <directxmath.h>
+
+vec3_t vec3_t::ToVectors(vec3_t* side , vec3_t* up) {
+	float  rad_pitch = ToRadians(this->x);
+	float  rad_yaw = ToRadians(this->y);
+	float sin_pitch;
+	float sin_yaw;
+	float sin_roll;
+	float cos_pitch;
+	float cos_yaw;
+	float cos_roll;
+
+	DirectX::XMScalarSinCos(&sin_pitch, &cos_pitch, rad_pitch);
+	DirectX::XMScalarSinCos(&sin_yaw, &cos_yaw, rad_yaw);
+
+	if (side || up)
+		DirectX::XMScalarSinCos(&sin_roll, &cos_roll, ToRadians(this->z));
+
+	if (side) {
+		side->x = -1.0f * sin_roll * sin_pitch * cos_yaw + -1.0f * cos_roll * -sin_yaw;
+		side->y = -1.0f * sin_roll * sin_pitch * sin_yaw + -1.0f * cos_roll * cos_yaw;
+		side->z = -1.0f * sin_roll * cos_pitch;
+	}
+
+	if (up) {
+		up->x = cos_roll * sin_pitch * cos_yaw + -sin_roll * -sin_yaw;
+		up->y = cos_roll * sin_pitch * sin_yaw + -sin_roll * cos_yaw;
+		up->z = cos_roll * cos_pitch;
+	}
+
+	return { cos_pitch * cos_yaw, cos_pitch * sin_yaw, -sin_pitch };
+}
+
+
 float vec3_t::distance_to(const vec3_t& other) {
 	vec3_t delta;
 	delta.x = x - other.x;

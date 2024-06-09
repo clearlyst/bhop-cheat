@@ -200,6 +200,7 @@ void imgui_render::drawrect(const float x, const float y, const float w, const f
 }
 
 void imgui_render::drawcornerbox(const float x, const float y, const float w, const float h, const float lenght, const color_t& colour) {
+
 	im_render.drawline(x, y, x, y + (h / lenght), color_t(colour));
 	im_render.drawline(x, y, x + (w / lenght), y, color_t(colour));
 	im_render.drawline(x + w, y, x + w - (w / lenght), y, color_t(colour));

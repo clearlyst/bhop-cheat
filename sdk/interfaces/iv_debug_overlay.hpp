@@ -3,8 +3,6 @@
 #include "../utils/vfunc.hpp"
 #include "../structs/color.hpp"
 
-#define get_virtual_fn( index, function_name, type, ... )  auto function_name { return CallVFunction<type>( this, index )( this, __VA_ARGS__ ); };
-
 class iv_debug_overlay {
 public:
 	bool world_to_screen(const vec3_t& in, vec3_t& out) {
@@ -13,6 +11,15 @@ public:
 		return static_cast<bool>(return_value != 1);
 	}
 
-	get_virtual_fn(24, add_capsule_overlay(vec3_t& mins, vec3_t& maxs, float radius, color_t color, float duration), void(__thiscall*)(void*, vec3_t&, vec3_t&, float&, float, float, float, float, float), mins, maxs, radius, color.r(), color.g(), color.b(), color.a(), duration);
+	void box_overlay(const vec3_t& origin, const vec3_t& mins, const vec3_t& maxs, const vec3_t& orientation, int r, int g, int b, int a, float duration)
+	{
+		using original_fn = void(__thiscall*)(void*, const vec3_t&, const vec3_t&, const vec3_t&, const vec3_t&, int, int, int, int, float);
+		CallVFunction<original_fn>(this, 1)(this, origin, mins, maxs, orientation, r, g, b, a, duration);
+	}
 
+	void add_capsule_overlay(const vec3_t& mins, const vec3_t& maxs, float radius, int r, int g, int b, int a, float duration)
+	{
+		using original_fn = void(__thiscall*)(void*, const vec3_t&, const vec3_t&, float, int, int, int, int, float);
+		CallVFunction<original_fn>(this, 24)(this, mins, maxs, radius, r, g, b, a, duration);
+	}
 };

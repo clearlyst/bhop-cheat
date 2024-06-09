@@ -74,7 +74,7 @@ inline uint8_t* find_pattern(const char* mod_name, const char* sig) {
             return &scan_bytes[i];
     }
 
-    printf("ozungaware | sig %s not found in %s\n", sig, mod_name);
+    printf("signatura %s not found in %s\n", sig, mod_name);
     return nullptr;
 }
 

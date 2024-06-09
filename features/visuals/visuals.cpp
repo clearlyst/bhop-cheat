@@ -32,7 +32,7 @@ void features::visuals::particles()
 			continue;
 
 		[&]() {
-			if (client_class->class_id != cfogcontroller)
+			if (client_class->class_id != C_FOG_CONTROLLER)
 				return;
 
 			color_t color(c::visuals::world::fog::color);
@@ -52,7 +52,7 @@ void features::visuals::particles()
 			if (!c::visuals::world::shadow::enable)
 				return;
 
-			if (client_class->class_id != class_ids::ccascadelight)	
+			if (client_class->class_id != class_ids::C_CASCADE_LIGHT)	
 				return;
 
 			entity->shadow_direction() = vec3_t(c::visuals::world::shadow::x, c::visuals::world::shadow::y, c::visuals::world::shadow::z);
@@ -60,7 +60,7 @@ void features::visuals::particles()
 		}();
 
 		[&]() {
-			if (client_class->class_id != class_ids::cenvtonemapcontroller)
+			if (client_class->class_id != class_ids::C_ENV_TONEMAP_CONTROLLER)
 				return;
 
 			entity->use_custom_bloom_scale() = true;
@@ -80,6 +80,7 @@ void features::visuals::particles()
 	static auto mat_force_tonemap_scale = interfaces::console->get_convar("mat_force_tonemap_scale")->get_float();
 	static auto mat_fullbright = interfaces::console->get_convar("mat_fullbright")->get_float();
 	static auto r_3dsky = interfaces::console->get_convar("r_3dsky")->get_float();
+	static auto r_aspectratio = interfaces::console->get_convar("r_aspectratio")->get_float();
 
 	static bool* disable_postprocessing = *reinterpret_cast<bool**>(find_pattern("client.dll", "83 EC 4C 80 3D") + 0x5);
 	*disable_postprocessing = c::visuals::post_processing::enable;
@@ -87,6 +88,7 @@ void features::visuals::particles()
 	interfaces::console->get_convar("mat_force_tonemap_scale")->callbacks.clear();
 	interfaces::console->get_convar("mat_fullbright")->callbacks.clear();
 	interfaces::console->get_convar("r_3dsky")->callbacks.clear();
+	interfaces::console->get_convar("r_aspectratio")->callbacks.clear();
 
 	if (c::visuals::world::brightness::enable)
 	{
@@ -119,9 +121,14 @@ void features::visuals::particles()
 	{
 		interfaces::console->get_convar("sv_cheats")->set_value(1);
 	}
+
+	if (c::visuals::world::aspect_ratio_modulation::enable)
+	{
+		interfaces::console->get_convar("r_aspectratio")->set_value(c::visuals::world::aspect_ratio_modulation::amount);
+	}
 	else
 	{
-		interfaces::console->get_convar("sv_cheats")->set_value(0);
+		interfaces::console->get_convar("r_aspectratio")->set_value(r_aspectratio);
 	}
 }
 
@@ -152,7 +159,7 @@ void features::visuals::entities_ragdoll()
 		if (!client_class)
 			continue;
 
-		if (client_class->class_id != ccsragdoll)
+		if (client_class->class_id != C_CS_RAGDOLL)
 			continue;
 
 
@@ -454,4 +461,434 @@ void features::visuals::freecam(view_setup_t* setup) {
 		origin += up * cam_speed;
 
 	setup->origin = origin;
+}
+
+void draw_screen_effect(i_material* material) {
+	static auto fn = find_pattern("client.dll", "55 8B EC 83 E4 ? 83 EC ? 53 56 57 8D 44 24 ? 89 4C 24 ?");
+	int w, h;
+	interfaces::engine->get_screen_size(w, h);
+	__asm {
+		push h
+		push w
+		push 0
+		xor edx, edx
+		mov ecx, material
+		call fn
+		add esp, 12
+	}
+}
+
+struct motion_blur_history {
+	motion_blur_history() {
+		last_time_update = 0.0f;
+		previous_pitch = 0.0f;
+		previous_yaw = 0.0f;
+		previous_pos = vec3_t{ 0.0f, 0.0f, 0.0f };
+		no_rotational_mb_until = 0.0f;
+	}
+
+	float last_time_update;
+	float previous_pitch;
+	float previous_yaw;
+	vec3_t previous_pos;
+	float no_rotational_mb_until;
+};
+
+void features::visuals::motion_blur(view_setup_t* setup)
+{
+	if (!c::visuals::world::motionblur::enable)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	static motion_blur_history history;
+	static float motion_blur_values[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	if (setup)
+	{
+		const float time_elapsed = interfaces::globals->realtime - history.last_time_update;
+
+		const auto view_angles = setup->view;
+
+		float current_pitch = view_angles.x;
+
+		while (current_pitch > 180.0f)
+			current_pitch -= 360.0f;
+		while (current_pitch < -180.0f)
+			current_pitch += 360.0f;
+
+		float current_yaw = view_angles.y;
+
+		while (current_yaw > 180.0f)
+			current_yaw -= 360.0f;
+		while (current_yaw < -180.0f)
+			current_yaw += 360.0f;
+
+		vec3_t current_side_vector;
+		vec3_t current_forward_vector;
+		vec3_t current_up_vector;
+		math::angle_vectors(setup->view, &current_forward_vector, &current_side_vector, &current_up_vector);
+
+		vec3_t current_position = setup->origin;
+		vec3_t position_change = history.previous_pos - current_position;
+
+		if ((position_change.length() > 30.0f) && (time_elapsed >= 0.5f))
+		{
+			motion_blur_values[0] = 0.0f;
+			motion_blur_values[1] = 0.0f;
+			motion_blur_values[2] = 0.0f;
+			motion_blur_values[3] = 0.0f;
+		}
+		else if (time_elapsed > (1.0f / 15.0f))
+		{
+			motion_blur_values[0] = 0.0f;
+			motion_blur_values[1] = 0.0f;
+			motion_blur_values[2] = 0.0f;
+			motion_blur_values[3] = 0.0f;
+		}
+		else if (position_change.length() > 50.0f)
+		{
+			history.no_rotational_mb_until = interfaces::globals->realtime + 1.0f;
+		}
+		else
+		{
+			const float horizontal_fov = setup->fov;
+			const float vertical_fov = (setup->aspect_ratio <= 0.0f) ? (setup->fov) : (setup->fov / setup->aspect_ratio);
+			const float viewdot_motion = current_forward_vector.dot_product(position_change);
+
+			if (c::visuals::world::motionblur::forward_move_blur)
+			{
+				motion_blur_values[2] = viewdot_motion;
+			}
+
+			const float sidedot_motion = current_side_vector.dot_product(position_change);
+			float yawdiff_original = history.previous_yaw - current_yaw;
+
+			if (((history.previous_yaw - current_yaw > 180.0f) || (history.previous_yaw - current_yaw < -180.0f)) && ((history.previous_yaw + current_yaw > -180.0f) && (history.previous_yaw + current_yaw < 180.0f)))
+			{
+				yawdiff_original = history.previous_yaw + current_yaw;
+			}
+
+			float yawdiff_adjusted = yawdiff_original + (sidedot_motion / 3.0f);
+
+			if (yawdiff_original < 0.0f)
+			{
+				yawdiff_adjusted = std::clamp(yawdiff_adjusted, yawdiff_original, 0.0f);
+			}
+			else
+			{
+				yawdiff_adjusted = std::clamp(yawdiff_adjusted, 0.0f, yawdiff_original);
+			}
+
+			const float undampened_yaw = yawdiff_adjusted / horizontal_fov;
+			motion_blur_values[0] = undampened_yaw * (1.0f - (fabsf(current_pitch) / 90.0f));
+
+			const float pitch_compensate_mask = 1.0f - ((1.0f - fabsf(current_forward_vector[2])) * (1.0f - fabsf(current_forward_vector[2])));
+			const float pitchdiff_original = history.previous_pitch - current_pitch;
+			float pitchdiff_adjusted = pitchdiff_original;
+
+			if (current_pitch > 0.0f)
+			{
+				pitchdiff_adjusted = pitchdiff_original - ((viewdot_motion / 2.0f) * pitch_compensate_mask);
+			}
+			else
+			{
+				pitchdiff_adjusted = pitchdiff_original + ((viewdot_motion / 2.0f) * pitch_compensate_mask);
+			}
+
+
+			if (pitchdiff_original < 0.0f)
+			{
+				pitchdiff_adjusted = std::clamp(pitchdiff_adjusted, pitchdiff_original, 0.0f);
+			}
+			else
+			{
+				pitchdiff_adjusted = std::clamp(pitchdiff_adjusted, 0.0f, pitchdiff_original);
+			}
+
+			motion_blur_values[1] = pitchdiff_adjusted / vertical_fov;
+			motion_blur_values[3] = undampened_yaw;
+			motion_blur_values[3] *= (fabs(current_pitch) / 90.0f) * (fabs(current_pitch) / 90.0f) * (fabs(current_pitch) / 90.0f);
+
+			if (time_elapsed > 0.0f)
+			{
+				motion_blur_values[2] /= time_elapsed * 30.0f;
+			}
+			else
+			{
+				motion_blur_values[2] = 0.0f;
+			}
+
+			motion_blur_values[2] = std::clamp((fabsf(motion_blur_values[2]) - c::visuals::world::motionblur::falling_minimum) / (c::visuals::world::motionblur::falling_maximum - c::visuals::world::motionblur::falling_minimum), 0.0f, 1.0f) * (motion_blur_values[2] >= 0.0f ? 1.0f : -1.0f);
+			motion_blur_values[2] /= 30.0f;
+			motion_blur_values[0] *= c::visuals::world::motionblur::rotate_intensity * .15f * c::visuals::world::motionblur::strength;
+			motion_blur_values[1] *= c::visuals::world::motionblur::rotate_intensity * .15f * c::visuals::world::motionblur::strength;
+			motion_blur_values[2] *= c::visuals::world::motionblur::rotate_intensity * .15f * c::visuals::world::motionblur::strength;
+			motion_blur_values[3] *= c::visuals::world::motionblur::falling_intensity * .15f * c::visuals::world::motionblur::strength;
+		}
+
+		if (interfaces::globals->realtime < history.no_rotational_mb_until)
+		{
+			motion_blur_values[0] = 0.0f;
+			motion_blur_values[1] = 0.0f;
+			motion_blur_values[3] = 0.0f;
+		}
+		else 
+		{
+			history.no_rotational_mb_until = 0.0f;
+		}
+
+		history.previous_pos = current_position;
+		history.previous_pitch = current_pitch;
+		history.previous_yaw = current_yaw;
+		history.last_time_update = interfaces::globals->realtime;
+
+		return;
+	}
+
+	i_material* material = interfaces::material_system->find_material("dev/motion_blur", "RenderTargets", false);
+
+	if (material->is_error_material())
+	{
+		return;
+	}
+
+	const auto motion_blur_internal = material->find_var("$MotionBlurInternal", nullptr, false);
+
+	motion_blur_internal->set_vec_component_value(motion_blur_values[0], 0);
+	motion_blur_internal->set_vec_component_value(motion_blur_values[1], 1);
+	motion_blur_internal->set_vec_component_value(motion_blur_values[2], 2);
+	motion_blur_internal->set_vec_component_value(motion_blur_values[3], 3);
+
+	const auto motion_blur_view_port_internal = material->find_var("$MotionBlurViewportInternal", nullptr, false);
+
+	motion_blur_view_port_internal->set_vec_component_value(0.0f, 0);
+	motion_blur_view_port_internal->set_vec_component_value(0.0f, 1);
+	motion_blur_view_port_internal->set_vec_component_value(1.0f, 2);
+	motion_blur_view_port_internal->set_vec_component_value(1.0f, 3);
+
+	if (c::visuals::world::motionblur::video_adapter == 0 || c::visuals::world::motionblur::video_adapter == 3)
+	{
+		static convar* mat_res = interfaces::console->get_convar("mat_resolveFullFrameDepth");
+		mat_res->set_value(0);
+	}
+
+	draw_screen_effect(material);
+}
+
+template <typename t>
+static t interpolate(const t& t1, const t& t2, float progress)
+{
+	if (t1 == t2)
+		return t1;
+
+	return t2 * progress + t1 * (1.0f - progress);
+}
+
+void thirdperson_init(bool fakeducking, float progress) {
+	/* our current fraction. */
+	static float current_fraction = 0.0f;
+
+	float distance = c::visuals::world::thirdperson::distance * progress;
+	vec3_t angles, trace_angles;
+
+	// get camera angles.
+	interfaces::engine->get_view_angles(angles);
+	interfaces::engine->get_view_angles(trace_angles);
+
+	// cam_idealdist convar.
+	trace_angles.z = distance;
+
+	// set camera direction.
+	vec3_t forward, right, up;
+	math::angle_vectors(trace_angles, &forward, &right, &up);
+
+	// various fixes to camera when fakeducking.
+	auto eye_position = fakeducking ? g::local->get_absolute_origin() + interfaces::game_movement->GetPlayerViewOffset(false) : g::local->get_absolute_origin() + g::local->view_offset();
+	auto camera_position = eye_position + forward * -distance + right + up;
+
+	// setup trace filter and trace.
+	trace_filter filter;
+	trace_t trace;
+	ray_t ray;
+	ray.initialize(eye_position, camera_position, vec3_t(-16.0f, -16.0f, -16.0f), vec3_t(16.0f, 16.0f, 16.0f));
+
+	// tracing to camera angles.
+	interfaces::trace_ray->trace_ray(ray, MASK_SOLID, &filter, &trace);
+
+	auto fraction = trace.flFraction;
+
+	if (fraction < 1.0f)
+	{
+		auto current_eye_pos = eye_position + right * (float)c::visuals::world::thirdperson::distance * 0.5f;
+		current_eye_pos.z = eye_position.z;
+
+		ray.initialize(current_eye_pos, camera_position, vec3_t(-16.0f, -16.0f, -16.0f), vec3_t(16.0f, 16.0f, 4.0f));
+		interfaces::trace_ray->trace_ray(ray, MASK_SOLID, &filter, &trace);
+
+		if (trace.flFraction >= 1.0f && !trace.startSolid)
+		{
+			ray.initialize(camera_position, camera_position, vec3_t(-16.0f, -16.0f, -16.0f), vec3_t(16.0f, 16.0f, 4.0f));
+			interfaces::trace_ray->trace_ray(ray, MASK_SOLID, &filter, &trace);
+
+			if (!trace.startSolid)
+				fraction = 1.0f;
+		}
+		else
+		{
+			current_eye_pos = eye_position - right * (float)c::visuals::world::thirdperson::distance * 0.5f;
+			current_eye_pos.z = eye_position.z;
+
+			ray.initialize(current_eye_pos, camera_position, vec3_t(-16.0f, -16.0f, -16.0f), vec3_t(16.0f, 16.0f, 4.0f));
+			interfaces::trace_ray->trace_ray(ray, MASK_SOLID, &filter, &trace);
+
+			if (trace.flFraction >= 1.0f && !trace.startSolid)
+			{
+				ray.initialize(camera_position, camera_position, vec3_t(-16.0f, -16.0f, -16.0f), vec3_t(16.0f, 16.0f, 4.0f));
+				interfaces::trace_ray->trace_ray(ray, MASK_SOLID, &filter, &trace);
+
+				if (!trace.startSolid)
+					fraction = 1.0f;
+			}
+		}
+	}
+
+	// interpolate camera speed if something behind our camera.
+	if (current_fraction > trace.flFraction)
+		current_fraction = trace.flFraction;
+	else if (current_fraction > 0.9999f)
+		current_fraction = 1.0f;
+
+	// adapt distance to travel time.
+	current_fraction = interpolate(current_fraction, trace.flFraction, interfaces::globals->frame_time * 10.0f);
+	angles.z = distance * current_fraction;
+
+	// override camera angles.
+	interfaces::input->camera_offset = angles;
+
+	// https://www.unknowncheats.me/forum/counterstrike-global-offensive/320594-thirdperson-flickering.html
+	// https://www.unknowncheats.me/forum/counterstrike-global-offensive/319202-rendering-attached-wecapons-thirdperson.html
+	// shoot out eexomi source
+	g::local->update_visibility_all_entities();
+}
+
+void features::visuals::thirdperson()
+{
+	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
+	{
+		return;
+	}
+
+	if (!g::local)
+	{
+		return;
+	}
+
+	static float progress;
+	static bool in_transition;
+	static auto in_thirdperson = false;
+
+	if (!in_thirdperson && (c::visuals::world::thirdperson::enable && menu::checkkey(c::visuals::world::thirdperson::key, c::visuals::world::thirdperson::key_s)))
+		in_thirdperson = true;
+	else if (in_thirdperson && !(c::visuals::world::thirdperson::enable && menu::checkkey(c::visuals::world::thirdperson::key, c::visuals::world::thirdperson::key_s)))
+		in_thirdperson = false;
+
+	const auto weapon = g::local->active_weapon();
+
+	if (!weapon)
+	{
+		return;
+	}
+
+	const auto data = interfaces::weapon_system->get_weapon_data(weapon->item_definition_index());
+
+	if (!data)
+	{
+		return;
+	}
+
+	if (c::visuals::world::thirdperson::turn_off_while[0] && g::local->is_scoped())
+	{
+		in_thirdperson = false;
+		interfaces::input->camera_in_third_person = false;
+
+		return;
+	}
+
+	if (c::visuals::world::thirdperson::turn_off_while[1] && data->m_iWeaponType == WEAPONTYPE_GRENADE)
+	{
+		in_thirdperson = false;
+		interfaces::input->camera_in_third_person = false;
+		return;
+	}
+
+	if (c::visuals::world::thirdperson::turn_off_while[2] && data->m_iWeaponType == WEAPONTYPE_KNIFE)
+	{
+		in_thirdperson = false;
+		interfaces::input->camera_in_third_person = false;
+		return;
+	}
+
+	if (c::visuals::world::thirdperson::turn_off_while[3] && data->m_iWeaponType == WEAPON_TASER)
+	{
+		in_thirdperson = false;
+		interfaces::input->camera_in_third_person = false;
+		return;
+	}
+
+	if (in_thirdperson)
+	{
+		in_transition = false;
+
+		if (!interfaces::input->camera_in_third_person)
+			interfaces::input->camera_in_third_person = true;
+	}
+	else
+	{
+		progress -= interfaces::globals->frame_time * 8.f + (progress / 100);
+		progress = std::clamp(progress, 0.f, 1.f);
+
+		if (!progress)
+			interfaces::input->camera_in_third_person = false;
+		else
+		{
+			in_transition = true;
+			interfaces::input->camera_in_third_person = true;
+		}
+	}
+
+	if (interfaces::input->camera_in_third_person && !in_transition)
+	{
+		progress += interfaces::globals->frame_time * 8.f + (progress / 100);
+		progress = std::clamp(progress, 0.f, 1.f);
+	}
+
+	thirdperson_init(false, progress);
+
+	bool require_reset = false;
+
+	if (g::local->is_alive())
+	{
+		require_reset = false;
+		return;
+	}
+
+	if (c::visuals::world::thirdperson::when_spectating)
+	{
+		if (require_reset)
+			g::local->observer_mode() = obs_mode_chase;
+
+		if (g::local->observer_mode() == obs_mode_in_eye)
+			require_reset = true;
+	}
 }

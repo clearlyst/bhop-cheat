@@ -14,10 +14,10 @@ void sdk::hooks::init( ) {
 		printf(( "create move hook failed.\n" ));
 
 	if (MH_CreateHook(get_vfunc<void*>(interfaces::panel, 41), &paint_traverse::paint_traverse, (void**)&paint_traverse::ofunc))
-		printf(("override view hook failed.\n"));
+		printf(("paint traverse hook failed.\n"));
 
 	if (MH_CreateHook( get_vfunc<void*>( interfaces::client_mode, 18 ), &override_view::override_view, ( void** ) &override_view::ofunc ))
-		printf(( "override view hook failed.\n" ));
+		printf(("override view hook failed.\n" ));
 
 	if (MH_CreateHook( get_vfunc<void*>( interfaces::client_mode, 23 ), &override_mouse_input::override_mouse_input, ( void** ) &override_mouse_input::ofunc ))
 		printf(("override mouse input hook failed.\n" ));
@@ -25,17 +25,17 @@ void sdk::hooks::init( ) {
 	if (MH_CreateHook( get_vfunc<void*>( interfaces::client, 37 ), &frame_stage_notify::frame_stage_notify, ( void** ) &frame_stage_notify::ofunc ))
 		printf(("frame stage notify hook failed.\n" ));
 
-	if (MH_CreateHook(get_vfunc<void*>(interfaces::client_mode, 44), &do_post_screen_effects::do_post_screen_effects, (void**)&do_post_screen_effects::ofunc))
-		printf(("override view hook failed.\n"));
+	if (MH_CreateHook( get_vfunc<void*>( interfaces::client_mode, 44), &do_post_screen_effects::do_post_screen_effects, (void**)&do_post_screen_effects::ofunc))
+		printf(("do post screen effects hook failed.\n"));
 
-	if (MH_CreateHook(get_vfunc<void*>(interfaces::model_render, 21), &draw_model_execute::draw_model_execute, (void**)&draw_model_execute::draw_model_execute_original))
-		printf(("draw model execute  hook failed.\n"));
+	if (MH_CreateHook( get_vfunc<void*>( interfaces::model_render, 21), &draw_model_execute::draw_model_execute, (void**)&draw_model_execute::draw_model_execute_original))
+		printf(("draw model execute hook failed.\n"));
 
 	if (MH_CreateHook( get_vfunc<void*>( interfaces::engine_sound, 5 ), &emit_sound::emit_sound, ( void** ) &emit_sound::ofunc ))
 		printf(("emit sound hook failed.\n" ));
 
 	if (MH_CreateHook( get_vfunc<void*>( interfaces::surface, 67 ), &lock_cursor::lock_cursor, ( void** ) &lock_cursor::ofunc ))
-		printf( ("lock cursor hook failed."));
+		printf(("lock cursor hook failed."));
 
 	if (MH_CreateHook(get_vfunc<void*>(interfaces::key_values_system, 2), &alloc_key_values_memory::alloc_key_values_memory, (void**)&alloc_key_values_memory::ofunc))
 		printf(("key values system  hook failed.\n"));
@@ -45,6 +45,9 @@ void sdk::hooks::init( ) {
 
 	if (MH_CreateHook(get_vfunc<void*>(interfaces::engine->get_bsp_query(), 6), &list_leaves_in_box::list_leaves_in_box, (void**)&list_leaves_in_box::ofunc))
 		printf(("list leaves in box hook failed.\n"));
+
+	if (MH_CreateHook(get_vfunc<void*>(interfaces::model_info, 6), &get_vcollide::get_vcollide, (void**)&get_vcollide::ofunc))
+		printf(("loose files allowed hook failed.\n"));
 
 	if (MH_CreateHook(find_pattern(("client.dll"), ("55 8B EC 83 E4 F8 83 EC 70 56 57 8B F9 89 7C 24 14 83 7F 60")), &modify_eye_position::modify_eye_position, (void**)&modify_eye_position::ofunc))
 		printf(("modify eye position hook failed.\n"));
@@ -73,11 +76,20 @@ void sdk::hooks::init( ) {
 	if (MH_CreateHook(find_pattern(("client.dll"), ("55 8B EC 83 E4 F8 B8 ? ? ? ? E8 ? ? ? ? 53 8B D9 8B 0D")), &push_notice::push_notice, (void**)&push_notice::ofunc))
 		printf(("push notice hook failed.\n"));
 
+	if (MH_CreateHook(find_pattern(("client.dll"), ("8B 0D ? ? ? ? 56 8B 01 FF 50 ? 8B F0 85 F6 75 ?")), &is_depth_of_field_enabled::is_depth_of_field_enabled, (void**)&is_depth_of_field_enabled::ofunc))
+		printf(("is depth of field enabled hook failed.\n"));
+
+	if (MH_CreateHook(find_pattern("shaderapidx9.dll", ("A1 ? ? ? ? A8 ? 75 ? 83 C8 ? B9 ? ? ? ? 68 ? ? ? ? A3")), &supports_resolve_depth::supports_resolve_depth, (void**)&supports_resolve_depth::original) != MH_OK)
+		printf(("isupports resolve depth hook failed.\n"));
+
 	if (MH_CreateHook(find_pattern(("client.dll"), ("55 8B EC 83 E4 F8 83 EC 30 56 57 8B F9 0F 28 E1 8B 0D ? ? ? ? F3 0F 11 64 24 ? 89 7C 24 18 8B 81")), &particle::simulations, (void**)&particle::ofunc))
 		printf(("set particles simulations hook failed.\n"));
 
+	if (MH_CreateHook(find_pattern(("client.dll"), ("55 8B EC 83 E4 C0 83 EC 3C 56 6A")), &enforce_competitive_cvar::enforce_competitive_cvar, nullptr))
+		printf(("set enforce competitive convar hook failed.\n"));
+
 	if (MH_EnableHook( MH_ALL_HOOKS ) != MH_OK)
-		printf(( "failed to initialize hooks.\n" ));
+		printf(("failed to initialize hooks.\n" ));
 
 	window = FindWindowW( ( L"Valve001" ), NULL );
 

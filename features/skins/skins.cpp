@@ -2,12 +2,12 @@
 #include "../../sdk/sdk.hpp"
 #include "../../menu/config/config.hpp"
 
-static auto get_wearable_create_fn() -> create_client_class_fn {
+static auto get_wearable_create_fn() -> m_create_client_class_fn {
 	auto client_class = interfaces::client->get_all_classes();
 	for (client_class = interfaces::client->get_all_classes();
 		client_class; client_class = client_class->next_ptr) {
 
-		if (client_class->class_id == (int)class_ids::ceconwearable)
+		if (client_class->class_id == (int)class_ids::C_ECON_WEARABLE)
 			return client_class->create_fn;
 	}
 }
@@ -321,7 +321,7 @@ void features::skins::knife_changer( ) {
 		}
 
 		if (c::skins::knife_changer_enable) {
-			if (active_weapon->client_class()->class_id == class_ids::cknife) {
+			if (active_weapon->client_class()->class_id == class_ids::C_KNIFE) {
 				switch (c::skins::knife_changer_model) {
 				case 0:
 					break;
@@ -379,7 +379,7 @@ void features::skins::knife_changer( ) {
 				}
 			}
 
-			if (weapon->client_class()->class_id == class_ids::cknife) {
+			if (weapon->client_class()->class_id == class_ids::C_KNIFE) {
 				switch (c::skins::knife_changer_model) {
 				case 0:
 					break;
@@ -564,7 +564,7 @@ void features::skins::agent_changer( ) {
 
 	const auto local = interfaces::ent_list->get<player_t>( interfaces::engine->get_local_player( ) );
 
-	if (!local || !local->is_alive( ) || local->client_class( )->class_id != class_ids::ccsplayer)
+	if (!local || !local->is_alive( ) || local->client_class( )->class_id != class_ids::C_CS_PLAYER)
 		return;
 
 	static auto game_type = interfaces::console->get_convar( ( "game_type" ) );

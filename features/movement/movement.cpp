@@ -812,7 +812,7 @@ void features::movement::edge_bug(c_usercmd* cmd)
 		float sidemove;
 		float viewangle;
 		int ticks_left;
-	} detect_data;
+	} detect_data{};
 
 	if (!c::movement::edge_bug || !menu::checkkey(c::movement::edge_bug_key, c::movement::edge_bug_key_s))
 	{

@@ -13,6 +13,7 @@ void __stdcall sdk::hooks::frame_stage_notify::frame_stage_notify( int stage ) {
 		features::misc::force_crosshair();
 		features::misc::recoil_crosshair();
 		features::misc::preserve_killfeed();
+		features::misc::bullet_impact::client();
 		features::visuals::flashalpha();
 		features::visuals::skybox_changer(frame_render_start);
 		features::visuals::nosmoke();
@@ -29,7 +30,7 @@ void __stdcall sdk::hooks::frame_stage_notify::frame_stage_notify( int stage ) {
 		features::skins::full_update();
 	}
 	else if (stage == frame_net_update_start) {
-	
+
 	}
 	else if (stage == frame_net_update_end) {
 		features::visuals::get_update_sounds();
@@ -44,5 +45,7 @@ void __stdcall sdk::hooks::frame_stage_notify::frame_stage_notify( int stage ) {
 		return ofunc(interfaces::client, stage);
 	}
 
+	features::visuals::weather::precipitation_main((client_frame_stage_t)stage, false);
 	ofunc( interfaces::client, stage );
+	features::visuals::weather::precipitation_main((client_frame_stage_t)stage, true);
 }

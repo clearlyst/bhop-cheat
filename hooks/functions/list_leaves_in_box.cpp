@@ -20,7 +20,7 @@ int __fastcall sdk::hooks::list_leaves_in_box::list_leaves_in_box(void* bsp, voi
 
 	auto entity = call_vfunc<entity_t*>(info->renderable - 4, 7);
 
-	if (!entity || entity->client_class()->class_id != class_ids::ccsplayer)
+	if (!entity || entity->client_class()->class_id != class_ids::C_CS_PLAYER)
 		return ofunc(bsp, mins, maxs, list, list_max);
 
 	info->flags &= ~0x100;

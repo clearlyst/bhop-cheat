@@ -1,7 +1,7 @@
 #include "../visuals/visuals.hpp"
 #include "../../menu/config/config.hpp"
 
-bool features::visuals::get_playerbox(player_t* entity, bbox_t& in)
+bool features::visuals::get_player_box(player_t* entity, bbox_t& in)
 {
 	if (!entity)
 	{
@@ -40,6 +40,97 @@ bool features::visuals::get_playerbox(player_t* entity, bbox_t& in)
 	}
 
 	vec3_t pos = entity->abs_origin(), flb, brt, blb, frt, frb, brb, blt, flt;
+
+	if (!interfaces::debug_overlay->world_to_screen(points_transformed[3], flb) ||
+		!interfaces::debug_overlay->world_to_screen(points_transformed[5], brt) ||
+		!interfaces::debug_overlay->world_to_screen(points_transformed[0], blb) ||
+		!interfaces::debug_overlay->world_to_screen(points_transformed[4], frt) ||
+		!interfaces::debug_overlay->world_to_screen(points_transformed[2], frb) ||
+		!interfaces::debug_overlay->world_to_screen(points_transformed[1], brb) ||
+		!interfaces::debug_overlay->world_to_screen(points_transformed[6], blt) ||
+		!interfaces::debug_overlay->world_to_screen(points_transformed[7], flt))
+	{
+		return false;
+	}
+
+	vec3_t arr[] = { flb, brt, blb, frt, frb, brb, blt, flt };
+
+	float left = flb.x;
+	float top = flb.y;
+	float right = flb.x;
+	float bottom = flb.y;
+
+	for (int i = 1; i < 8; i++)
+	{
+		if (left > arr[i].x)
+		{
+			left = arr[i].x;
+		}
+
+		if (bottom < arr[i].y)
+		{
+			bottom = arr[i].y;
+		}
+
+		if (right < arr[i].x)
+		{
+			right = arr[i].x;
+		}
+
+		if (top > arr[i].y)
+		{
+			top = arr[i].y;
+		}
+	}
+
+	in.x = static_cast<int>(left);
+	in.y = static_cast<int>(top);
+	in.w = static_cast<int>(right) - static_cast<int>(left);
+	in.h = static_cast<int>(bottom) - static_cast<int>(top);
+
+	return true;
+}
+
+bool features::visuals::get_entity_box(entity_t* entity, bbox_t& in)
+{
+	if (!entity)
+	{
+		return false;
+	}
+
+	vec3_t min, max, flb, brt, blb, frt, frb, brb, blt, flt;
+
+	auto collideable = entity->collideable();
+
+	if (!collideable)
+	{
+		return false;
+	}
+
+	min = collideable->mins();
+	max = collideable->maxs();
+
+	matrix_t trans = entity->coordinate_frame();
+
+	vec3_t points[] =
+	{
+		vec3_t(min.x, min.y, min.z),
+		vec3_t(min.x, max.y, min.z),
+		vec3_t(max.x, max.y, min.z),
+		vec3_t(max.x, min.y, min.z),
+		vec3_t(max.x, max.y, max.z),
+		vec3_t(min.x, max.y, max.z),
+		vec3_t(min.x, min.y, max.z),
+		vec3_t(max.x, min.y, max.z)
+	};
+
+	vec3_t points_transformed[8];
+
+	for (int i = 0; i < 8; i++)
+	{
+		math::transform_vector(points[i], trans, points_transformed[i]);
+	}
+
 
 	if (!interfaces::debug_overlay->world_to_screen(points_transformed[3], flb) ||
 		!interfaces::debug_overlay->world_to_screen(points_transformed[5], brt) ||
@@ -182,7 +273,7 @@ void features::visuals::player::run()
 
 		bbox_t _box;
 
-		if (!get_playerbox(entity, _box))
+		if (!get_player_box(entity, _box))
 		{
 			continue;
 		}
@@ -240,7 +331,6 @@ void features::visuals::player::run()
 		}
 	}
 
-	
 	for (int i = 1; i < interfaces::ent_list->get_highest_index(); i++)
 	{
 		auto entity = reinterpret_cast<entity_t*>(interfaces::ent_list->get_client_entity(i));
@@ -261,7 +351,15 @@ void features::visuals::player::run()
 			c::visuals::players::dropped_weapon::text::enable ||
 			c::visuals::players::dropped_weapon::icon::enable)
 		{
-			dropped_weapon(entity);
+
+			bbox_t entity_box;
+
+			if (!get_entity_box(entity, entity_box))
+			{
+				continue;
+			}
+
+			dropped_weapon(entity, entity_box);
 		}
 	}
 }
@@ -545,7 +643,7 @@ void features::visuals::player::draw_flags(player_t* entity, bbox_t bbox, color_
 		flags.push_back({ "scoped", color });
 	}
 
-	if (c::visuals::players::flags::flags[4])
+	if (c::visuals::players::flags::flags[4] && ((entity->get_sequence_activity(entity->get_animation_overlays_index(1)->m_nSequence) == 967) && (entity->get_animation_overlays_index(1)->m_flWeight != 0.f)))
 	{
 		flags.push_back({ "reloading...", color });
 	}
@@ -607,7 +705,7 @@ void features::visuals::player::draw_bottom_bar(player_t* entity, bbox_t bbox, c
 
 			int width = ((box_w * weapon->clip1_count()) / weapon_data->m_iMaxClip);
 
-			if (c::visuals::players::health_bar::background)
+			if (c::visuals::players::ammo_bar::background)
 			{
 				im_render.drawrectfilled(bbox.x - 1, bbox.y + bbox.h + 2, bbox.w + 2, c::visuals::players::ammo_bar::size + 2, ammo_bar_outline);
 			}
@@ -918,19 +1016,19 @@ void features::visuals::throwed_grenade(entity_t* entity)
 
 		if (c::visuals::players::thrown_grenade::icon::enable)
 		{
-			im_render.text(grenade_position.x, grenade_position.y, 12.0f, fonts::icon_font, grenade_icon, true, color_t(c::visuals::players::thrown_grenade::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+			im_render.text(grenade_position.x, grenade_position.y, 12.0f, fonts::icon_font, grenade_icon, true, color_t(c::visuals::players::thrown_grenade::icon::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 
 			offset += 13;
 		}
 
 		if (c::visuals::players::thrown_grenade::text::enable)
 		{
-			im_render.text(grenade_position.x, grenade_position.y + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, grenade_name, true, color_t(c::visuals::players::thrown_grenade::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+			im_render.text(grenade_position.x, grenade_position.y + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, grenade_name, true, color_t(c::visuals::players::thrown_grenade::text::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 		}
 	}
 }
 
-void features::visuals::dropped_weapon(entity_t* entity)
+void features::visuals::dropped_weapon(entity_t* entity, bbox_t bbox)
 {
 	auto weapon = (weapon_t*)entity;
 
@@ -976,22 +1074,72 @@ void features::visuals::dropped_weapon(entity_t* entity)
 
 	auto offset = 0;
 
+	if (c::visuals::players::dropped_weapon::box::enable)
+	{
+		switch (c::visuals::players::dropped_weapon::box::type)
+		{
+		case 0:
+			if (c::visuals::players::dropped_weapon::box::outline[0])
+			{
+				im_render.drawrect(bbox.x - 1, bbox.y - 1, bbox.w + 2, bbox.h + 2, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+			}
+
+			if (c::visuals::players::dropped_weapon::box::outline[1])
+			{
+				im_render.drawrect(bbox.x + 1, bbox.y + 1, bbox.w - 2, bbox.h - 2, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+			}
+
+			im_render.drawrect(bbox.x, bbox.y, bbox.w, bbox.h, c::visuals::players::dropped_weapon::box::color);
+
+			break;
+		case 1:
+			if (c::visuals::players::dropped_weapon::box::outline[0])
+			{
+				im_render.drawcornerbox(bbox.x - 1, bbox.y - 1, bbox.w + 2, bbox.h + 2, c::visuals::players::dropped_weapon::box::lenght, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+			}
+
+			if (c::visuals::players::dropped_weapon::box::outline[1])
+			{
+				im_render.drawcornerbox(bbox.x + 1, bbox.y + 1, bbox.w - 2, bbox.h - 2, c::visuals::players::dropped_weapon::box::lenght, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+			}
+
+			im_render.drawcornerbox(bbox.x, bbox.y, bbox.w, bbox.h, c::visuals::players::dropped_weapon::box::lenght, c::visuals::players::dropped_weapon::box::color);
+
+			break;
+		}
+	}
+
+	if (c::visuals::players::dropped_weapon::ammo_bar::enable)
+	{
+		if (weapon->isgun())
+		{
+			float box_w = (float)fabs(bbox.w - bbox.x);
+
+			int width = ((box_w * weapon->clip1_count()) / weapon_data->m_iMaxClip);
+
+			im_render.drawrectfilled(bbox.x - 1, bbox.y + bbox.h + 2, bbox.w + 2, 3, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::ammo_bar::color[3]));
+			im_render.drawrectfilled(bbox.x, bbox.y + bbox.h + 3, bbox.w, 1, c::visuals::players::dropped_weapon::ammo_bar::color);
+
+			offset += 4;
+		}
+	}
+
 	if (c::visuals::players::dropped_weapon::icon::enable)
 	{
-		im_render.text(droppedweapon_position.x, droppedweapon_position.y, 12.0f, fonts::icon_font, droppedweapon_icon, true, color_t(c::visuals::players::dropped_weapon::color_text), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, 12.0f, fonts::icon_font, droppedweapon_icon, true, color_t(c::visuals::players::dropped_weapon::icon::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 
 		offset += 13;
 	}
 
 	if (c::visuals::players::dropped_weapon::text::enable)
 	{
-		im_render.text(droppedweapon_position.x, droppedweapon_position.y + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, droppedweapon_name, true, color_t(c::visuals::players::dropped_weapon::color_text), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, droppedweapon_name, true, color_t(c::visuals::players::dropped_weapon::text::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 
 		offset += 13;
 	}
 
 	if (c::visuals::players::dropped_weapon::ammo_text::enable && weapon->isgun())
 	{
-		im_render.text(droppedweapon_position.x, droppedweapon_position.y + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, ("[") + currentammo_text + (" / ") + maxammo_text + ("]"), true, color_t(c::visuals::players::dropped_weapon::color_text), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, ("[") + currentammo_text + (" / ") + maxammo_text + ("]"), true, color_t(c::visuals::players::dropped_weapon::ammo_text::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 	}
 }

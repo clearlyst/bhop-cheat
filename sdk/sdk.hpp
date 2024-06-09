@@ -117,6 +117,7 @@ namespace interfaces {
 	inline glow_manager_t* glow_manager = nullptr;
 	inline iv_effects* effects = nullptr;
 	inline i_input* input = nullptr;
+	inline c_physics_collision* physics_collision = nullptr;
 	inline i_filesystem* filesystem;
 	inline std::uint8_t* key_values_engine = nullptr;
 	inline std::uint8_t* key_values_client = nullptr;
@@ -387,6 +388,25 @@ struct entity_handle_t {
 	bool operator!=(class entity_t* entity) const;
 };
 
+class AnimationLayer
+{
+public:
+	bool m_bClientBlend;				 //0x0000
+	float m_flBlendIn;					 //0x0004
+	void* m_pStudioHdr;					 //0x0008
+	int m_nDispatchSequence;     //0x000C
+	int m_nDispatchSequence_2;   //0x0010
+	uint32_t m_nOrder;           //0x0014
+	uint32_t m_nSequence;        //0x0018
+	float_t m_flPrevCycle;       //0x001C
+	float_t m_flWeight;          //0x0020
+	float_t m_flWeightDeltaRate; //0x0024
+	float_t m_flPlaybackRate;    //0x0028
+	float_t m_flCycle;           //0x002C
+	void* m_pOwner;              //0x0030 // player's thisptr
+	char pad_0038[4];            //0x0034
+};
+
 struct renderable_info_t {
 	entity_t* renderable;
 	std::byte pad[18];
@@ -404,6 +424,11 @@ public:
 	collideable_t* collideable() {
 		using original_fn = collideable_t * (__thiscall*)(void*);
 		return (*(original_fn**)this)[3](this);
+	}
+
+	const matrix_t& coordinate_frame() {
+		static auto coord_frame = netvar_manager::get_net_var(fnv::hash("DT_BaseEntity"), fnv::hash("m_CollisionGroup")) - 0x30;
+		return *(matrix_t*)((uintptr_t)this + coord_frame);
 	}
 
 	void* networkable() {
@@ -472,6 +497,31 @@ public:
 		return (*(original_fn**)this)[75](this, index);
 	}
 
+	AnimationLayer* get_animation_overlays()
+	{
+		return *(AnimationLayer**)((DWORD)this + 0x2990);
+	}
+
+	AnimationLayer* get_animation_overlays_index(int i)
+	{
+		if (i < 15)
+			return &get_animation_overlays()[i];
+
+		return nullptr;
+	}
+
+	int get_sequence_activity(int sequence)
+	{
+		auto hdr = interfaces::model_info->get_studio_model(this->model());
+
+		if (!hdr)
+			return -1;
+
+		static auto get_sequence_activity = reinterpret_cast<int(__fastcall*)(void*, studio_hdr_t*, int)>(find_pattern("client.dll", "55 8B EC 53 8B 5D 08 56 8B F1 83"));
+
+		return get_sequence_activity(this, hdr, sequence);
+	}
+
 	c_client_class* client_class() {
 		using original_fn = c_client_class * (__thiscall*)(void*);
 		return (*(original_fn**)networkable())[2](networkable());
@@ -526,6 +576,7 @@ public:
 	NETVAR("DT_BaseEntity", "m_hOwnerEntity", owner_handle, unsigned long)
 	NETVAR("DT_BaseEntity", "m_iTeamNum", team, int)
 	NETVAR("DT_BaseEntity", "m_bSpotted", spotted, bool)
+	NETVAR("DT_BaseEntity", "m_nModelIndex", model_index, int)
 
 	NETVAR("DT_BasePlayer", "m_vecOrigin", origin, vec3_t)
 	NETVAR("DT_BasePlayer", "m_vecViewOffset[0]", view_offset, vec3_t)
@@ -567,6 +618,8 @@ public:
 	NETVAR("DT_EnvTonemapController", "m_flCustomAutoExposureMax", custom_auto_exposure_max, float)
 
 	NETVAR("DT_Precipitation", "m_nPrecipType", precip_type, int)
+
+	NETVAR("DT_BaseAnimating", "m_nHitboxSet", hitbox_set, int)
 
 	OFFSET(std::uint32_t, idex, 0x100);
 };
@@ -1110,13 +1163,13 @@ public:
 	NETVAR("DT_BaseViewModel", "m_hWeapon", weapon, int)
 	NETVAR("DT_BasePlayer", "m_hObserverTarget", observer_target, unsigned long)
 	NETVAR("DT_BasePlayer", "m_iObserverMode", observer_mode, int)
-	NETVAR("DT_BasePlayer", "m_nHitboxSet", hitbox_set, int)
+	NETVAR("DT_BaseAnimating", "m_nHitboxSet", hitbox_set, int)
 	NETVAR("DT_CSPlayer", "m_flDuckAmount", duck_amount, float)
 	NETVAR("DT_CSPlayer", "m_bHasHeavyArmor", has_heavy_armor, bool)
 	NETVAR("DT_SmokeGrenadeProjectile", "m_nSmokeEffectTickBegin", smoke_grenade_tick_begin, int)
 	NETVAR("DT_BasePlayer", "m_nTickBase", get_tick_base, int)
 	NETVAR("DT_CSPlayer", "m_flHealthShotBoostExpirationTime", m_flHealthShotBoostExpirationTime, float)
-	NETVAR("CBaseEntity", "m_nModelIndex", model_index, unsigned)
+	NETVAR("DT_BaseEntity", "m_nModelIndex", model_index, int)
 	NETVAR("DT_CSPlayer", "m_bHasDefuser", has_defuser, bool)
 	NETVAR("DT_PlantedC4", "m_flC4Blow", c4_blow_time, float)
 	NETVAR("DT_PlantedC4", "m_flDefuseCountDown", c4_defuse_countdown, float)
@@ -1348,7 +1401,13 @@ public:
 
 	vec3_t& abs_origin() {
 		using original_fn = vec3_t & (__thiscall*)(void*);
-		return (*(original_fn**)this)[10](this);;
+		return (*(original_fn**)this)[10](this);
+	}
+
+	void update_visibility_all_entities() {
+		using original_fn = void(__thiscall*)(void*);
+		static auto update_visibility_all_entities_fn = reinterpret_cast<original_fn>(find_pattern("client.dll", "53 56 66 8B ? ? ? ? ? ? FF FF ? ? 57 90"));
+		update_visibility_all_entities_fn(this);
 	}
 
 	void set_abs_origin(vec3_t origin) {
@@ -1508,5 +1567,6 @@ namespace g {
 	inline c_usercmd* cmd = nullptr;
 	inline int width, height = 0;
 	inline bool send_packet = false;
+	inline bool clantag_update = false;
 	inline bool round_start = false;
 }

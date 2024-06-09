@@ -7,6 +7,19 @@
 #include "../../sdk/sdk.hpp"
 #include "../../sdk/steam/steamclientpublic.h"
 
+int current_checkpoint = 0;
+float press_delay = 0.0f;
+std::deque<std::pair<vec3_t, vec3_t>> checkpoints;
+
+struct client_hit_data_t
+{
+	vec3_t position;
+	float time;
+	float expires;
+};
+
+int hitmarker_time = 0;
+
 void features::misc::fix_mouse_delta(c_usercmd* cmd)
 {
 	if (!c::misc::mousefix)
@@ -115,11 +128,6 @@ void features::misc::fix_mouse_delta(c_usercmd* cmd)
 
 	delta_viewangles = cmd->view_angles;
 }
-
-std::deque<std::pair<vec3_t, vec3_t>> checkpoints;
-
-int current_checkpoint = 0;
-float press_delay = 0.0f;
 
 void features::misc::checkpoint_system()
 {
@@ -320,9 +328,21 @@ void features::misc::clantag_spammer()
 
 	if (c::misc::misc_clantag_type == 0)
 	{
-		apply_clan_tag(xs("bhop cheat "), xs("bhop cheat"));
+		apply_clan_tag(" ", "bhop cheat");
 	}
 	else if (c::misc::misc_clantag_type == 1)
+	{
+		apply_clan_tag("\n ", "bhop cheat");
+	}
+	else if (c::misc::misc_clantag_type == 2)
+	{
+		apply_clan_tag(std::to_string(g::local->velocity().length_2d()).c_str(), "bhop cheat");
+	}
+	else if (c::misc::misc_clantag_type == 3)
+	{
+		apply_clan_tag("[bhop cheat] ", "bhop cheat");
+	}
+	else if (c::misc::misc_clantag_type == 4)
 	{
 		if (interfaces::globals->realtime - lasttime < c::misc::misc_clantag_speed)
 			return;
@@ -332,24 +352,22 @@ void features::misc::clantag_spammer()
 			rotating = c::misc::misc_clantag_text;
 		}
 
-		if (c::misc::misc_clantag_rotation) {
-			if (!rotating.empty()) {
-				char last = rotating.back();
-				rotating.pop_back();
-				rotating.insert(rotating.begin(), last);
-				apply_clan_tag(rotating.c_str(), torotate.c_str());
-			}
+		if (c::misc::misc_clantag_reverse_rolling) {
+			char last = rotating.back();
+			rotating.pop_back();
+			rotating.insert(rotating.begin(), last);
+
+			apply_clan_tag(rotating.c_str(), torotate.c_str());
 		}
 		else {
-			if (!rotating.empty()) {
-				std::rotate(rotating.begin(), rotating.begin() + (rotating.size() - 1), rotating.end());
-				apply_clan_tag(rotating.c_str(), torotate.c_str());
-			}
+			std::rotate(rotating.begin(), std::next(rotating.begin()), rotating.end());
+
+			apply_clan_tag(rotating.c_str(), torotate.c_str());
 		}
 
 		lasttime = interfaces::globals->realtime;
 	}
-	else if (c::misc::misc_clantag_type == 2) {
+	else if (c::misc::misc_clantag_type == 5) {
 		if (interfaces::globals->cur_time * 0.8f + latency != lasttime)
 		{
 			if (interfaces::globals->realtime - interfaces::globals->cur_time > 1.f)
@@ -382,9 +400,12 @@ void features::misc::clantag_spammer()
 			lasttime = interfaces::globals->cur_time * 0.8f + latency;
 		}
 	}
-}
 
-int hitmarker_time = 0;
+	if (g::clantag_update)
+	{
+		g::clantag_update = false;
+	}
+}
 
 void features::misc::hitmarker::event(i_game_event* event)
 {
@@ -423,48 +444,7 @@ void features::misc::hitmarker::event(i_game_event* event)
 					case 2: interfaces::surface->play_sound("survival\\money_collect_01.wav"); break;
 					case 3: interfaces::surface->play_sound("Ui\\beep07.wav"); break;
 					}
-				}
-
-				if (c::misc::misc_hitchams)
-				{
-					const auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(user_id));
-
-					if (!entity)
-						return;
-
-					if (!entity->index())
-						return;
-
-					matrix_t bone_matrix[MAXSTUDIOBONES];
-
-					if (!entity->setup_bones(bone_matrix, MAXSTUDIOBONES, BONE_USED_BY_HITBOX, interfaces::globals->cur_time))
-						return;
-
-					studio_hdr_t* studio_hdr = interfaces::model_info->get_studio_model(entity->model());
-
-					if (!studio_hdr)
-						return;
-
-					const auto  hitbox_set = studio_hdr->hitbox_set(entity->hitbox_set());
-
-					if (!hitbox_set)
-						return;
-
-					for (int i = 0; i < hitbox_set->hitbox_count; i++)
-					{
-						studio_box_t* hitbox = hitbox_set->hitbox(i);
-
-						if (!hitbox)
-							continue;
-
-						vec3_t min_actual, max_actual;
-
-						math::vector_transform(hitbox->mins, bone_matrix[hitbox->bone], min_actual);
-						math::vector_transform(hitbox->maxs, bone_matrix[hitbox->bone], max_actual);
-
-						interfaces::debug_overlay->add_capsule_overlay(min_actual, max_actual, hitbox->radius, color_t(c::misc::misc_hitchams_clr), 2.5f);
-					}
-				}
+				}				
 			}
 		break;
 	}
@@ -845,7 +825,8 @@ void features::misc::big_scene_indicators()
 		return;
 	}
 
-	auto text_size = im_render.get_text_size("aim", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
+
+	auto aim_text_size = im_render.get_text_size("aim", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
 	auto sp_text_size = im_render.get_text_size("can sp", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
 	auto tp_text_size = im_render.get_text_size("can tp", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
 	auto warn_text_size = im_render.get_text_size("setup sv_cheats at true", fonts::debug_information_font, 0.f, c::fonts::debug_information_size);
@@ -854,9 +835,16 @@ void features::misc::big_scene_indicators()
 
 	if (c::misc::debug_information::can_fire::enable && c::aimbot::enable)
 	{
-		im_render.text((g::width - 5) - text_size, g::height / 2, c::fonts::debug_information_size, fonts::debug_information_font, "aim", false, aimbot::can_fire_checking() ? color_t(c::misc::debug_information::can_fire::active_color, 1.0f) : color_t(c::misc::debug_information::can_fire::inactive_color, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+		if (c::misc::debug_information::can_fire::style == 1)
+		{
+			im_render.text((g::width - 5) - aim_text_size, g::height / 2, c::fonts::debug_information_size, fonts::debug_information_font, "aim", false, aimbot::can_fire_checking() ? color_t(c::misc::debug_information::can_fire::active_color, 1.0f) : color_t(c::misc::debug_information::can_fire::inactive_color, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
 
-		offset_bottom += c::fonts::debug_information_size + 3;
+			offset_bottom += c::fonts::debug_information_size + 3;
+		}
+		else
+		{
+			im_render.text(g::width / 2, g::height / 2, c::fonts::debug_information_size, fonts::debug_information_font, aimbot::can_fire_checking() ? "can shoot" : "no", true, aimbot::can_fire_checking() ? color_t(c::misc::debug_information::can_fire::active_color, 1.0f) : color_t(c::misc::debug_information::can_fire::inactive_color, 1.0f), c::fonts::debug_information_flag[9], c::fonts::debug_information_flag[10]);
+		}
 	}
 
 	if (c::misc::debug_information::check_point_system::enable && c::misc::practice)
@@ -908,4 +896,191 @@ void features::misc::preserve_killfeed()
 		}
 	}
 
+}
+
+void features::misc::bullet_impact::event(i_game_event* event)
+{
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	auto event_name = fnv::hash(event->get_name());
+	auto user_id = interfaces::engine->get_player_for_user_id(event->get_int("userid"));
+
+	if (!event_name)
+	{
+		return;
+	}
+
+	switch (event_name)
+	{
+	case fnv::hash("bullet_impact"):
+		if (user_id == interfaces::engine->get_local_player())
+		{
+			vec3_t position(event->get_float("x"), event->get_float("y"), event->get_float("z"));
+
+			server(position);
+		}
+		break;
+	}
+}
+
+void features::misc::bullet_impact::client()
+{
+	if (!c::misc::bullet_impacts::enable || !c::misc::bullet_impacts::client::enable)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	static auto last_count = INT_MAX;
+	auto& client_impact_list = *(CUtlVector<client_hit_data_t>*)((uintptr_t)g::local + 0x11C50);
+
+	for (auto i = client_impact_list.Count(); i > last_count; --i)
+	{
+		interfaces::debug_overlay->box_overlay(client_impact_list[i - 1].position, vec3_t(-2.0f, -2.0f, -2.0f), vec3_t(2.0f, 2.0f, 2.0f), vec3_t(0.0f, 0.0f, 0.0f), (int)c::misc::bullet_impacts::client::color[0] * 255.0f, (int)c::misc::bullet_impacts::client::color[1] * 255.0f, (int)c::misc::bullet_impacts::client::color[2] * 255.0f, (int)c::misc::bullet_impacts::client::color[3] * 255.0f, c::misc::bullet_tracers::time);
+	}
+
+	if (client_impact_list.Count() != last_count)
+	{
+		last_count = client_impact_list.Count();
+	}
+}
+
+void features::misc::bullet_impact::server(vec3_t position)
+{
+	if (!c::misc::bullet_impacts::enable || !c::misc::bullet_impacts::server::enable)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	interfaces::debug_overlay->box_overlay(position, vec3_t(-2.0f, -2.0f, -2.0f), vec3_t(2.0f, 2.0f, 2.0f), vec3_t(0.0f, 0.0f, 0.0f), (int)c::misc::bullet_impacts::server::color[0] * 255.0f, (int)c::misc::bullet_impacts::server::color[1] * 255.0f, (int)c::misc::bullet_impacts::server::color[2] * 255.0f, (int)c::misc::bullet_impacts::server::color[3] * 255.0f, c::misc::bullet_tracers::time);
+}
+
+void features::misc::bullet_impact::trace(vec3_t position)
+{
+
+}
+
+void features::misc::penetration_crosshair()
+{
+	if (!c::misc::penetration_reticle::enable)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	} 
+
+	color_t color = color_t(255, 0, 0, 255);
+
+	const auto weapon = g::local->active_weapon();
+
+	if (!weapon)
+	{
+		return;
+	}
+
+	const auto data = interfaces::weapon_system->get_weapon_data(weapon->item_definition_index());
+
+	if (!data)
+	{
+		return;
+	}
+
+	if (!aimbot::can_fire_checking())
+	{
+		return;
+	}
+
+	vec3_t view_angles;
+	interfaces::engine->get_view_angles(view_angles);
+
+	vec3_t direction;
+	math::angle_vectors(view_angles, &direction, nullptr, nullptr);
+
+	trace_t trace;
+	trace_filter filter;
+	ray_t ray;
+
+	ray.initialize(g::local->get_eye_pos(), g::local->get_eye_pos() + direction * data->m_flWeaponRange);
+	filter.skip = g::local;
+
+	interfaces::trace_ray->trace_ray(ray, MASK_SHOT_HULL | CONTENTS_HITBOX, &filter, &trace);
+
+	if (trace.flFraction < 1.0f) 
+	{
+		//auto penetration_info = autowall::penetration->run(g::local->get_eye_pos(), g::local->get_eye_pos() + direction * data->m_flWeaponRange, nullptr, true);
+		//
+		//if (!penetration_info.visible)
+		//{
+		//	color = color_t(0, 255, 0, 255);
+		//}
+	}
+
+	im_render.drawrectfilled(g::width / 2 - 1, g::height / 2 - 1, g::width / 2 + 2, g::height / 2 + 2, color);
+}
+
+void features::misc::unlock_cvars()
+{
+	void* v0; 
+	int v1; 
+	void* v2; 
+	void* v3; 
+	int Flags;
+
+	v0 = interfaces::console;
+	v1 = (*(int(__thiscall**)(void*))(*(DWORD*)v0 + 180))(v0);
+	(**(void(__thiscall***)(int))v1)(v1);
+	while ((*(unsigned __int8(__thiscall**)(int))(*(DWORD*)v1 + 8))(v1))
+	{
+		v2 = (void*)(*(int(__thiscall**)(int))(*(DWORD*)v1 + 12))(v1);
+		v3 = v2;
+		if (v2)
+		{
+			Flags = *((DWORD*)v2 + 5);
+			if ((Flags & 0x12) != 0)
+				Flags = Flags & 0x7FFFFFED | 0x80000000;
+
+			int v2; // eax
+
+			v2 = Flags | *((DWORD*)v3 + 2) & 1;
+			*((DWORD*)v3 + 5) = Flags;
+			*((DWORD*)v3 + 2) = v2;
+
+		}
+		(*(void(__thiscall**)(int))(*(DWORD*)v1 + 4))(v1);
+	}
 }

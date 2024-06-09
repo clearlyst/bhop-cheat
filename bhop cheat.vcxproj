@@ -157,6 +157,7 @@
     <ClCompile Include="features\visuals\grenade_prediction.cpp" />
     <ClCompile Include="features\visuals\player.cpp" />
     <ClCompile Include="features\visuals\visuals.cpp" />
+    <ClCompile Include="features\visuals\weather.cpp" />
     <ClCompile Include="hooks\functions\alloc_key_values_memory.cpp" />
     <ClCompile Include="hooks\functions\base_player.cpp" />
     <ClCompile Include="hooks\functions\create_move.cpp" />
@@ -164,9 +165,11 @@
     <ClCompile Include="hooks\functions\do_post_screen_effects.cpp" />
     <ClCompile Include="hooks\functions\draw_model_execute.cpp" />
     <ClCompile Include="hooks\functions\emit_sound.cpp" />
+    <ClCompile Include="hooks\functions\enforce_convar.cpp" />
     <ClCompile Include="hooks\functions\fire_event.cpp" />
     <ClCompile Include="hooks\functions\frame_stage_notify.cpp" />
     <ClCompile Include="hooks\functions\get_color_modulation.cpp" />
+    <ClCompile Include="hooks\functions\get_vcollide.cpp" />
     <ClCompile Include="hooks\functions\list_leaves_in_box.cpp" />
     <ClCompile Include="hooks\functions\lock_cursor.cpp" />
     <ClCompile Include="hooks\functions\modify_eye_position.cpp" />
@@ -177,6 +180,7 @@
     <ClCompile Include="hooks\functions\push_notice.cpp" />
     <ClCompile Include="hooks\functions\send_datagram.cpp" />
     <ClCompile Include="hooks\functions\set_visuals_data.cpp" />
+    <ClCompile Include="hooks\functions\sv_cheat.cpp" />
     <ClCompile Include="hooks\functions\sv_pure.cpp" />
     <ClCompile Include="hooks\hooks.cpp" />
     <ClCompile Include="includes\imgui\imgui.cpp" />

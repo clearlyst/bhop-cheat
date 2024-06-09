@@ -182,6 +182,18 @@ namespace sdk {
 			void __fastcall override_view( void* _this, void* _edx, view_setup_t* setup );
 		}
 
+		namespace is_depth_of_field_enabled {
+			using fn = void* (__thiscall*)(void*);
+			inline fn ofunc;
+			bool __stdcall is_depth_of_field_enabled();
+		}
+
+		namespace supports_resolve_depth {
+			using fn = bool(*)();
+			inline fn original;
+			bool supports_resolve_depth();
+		}
+
 		namespace alloc_key_values_memory {
 			using fn = void* (__thiscall*)(void*, const std::int32_t);
 			inline fn ofunc;
@@ -228,6 +240,16 @@ namespace sdk {
 			using fn = int(__fastcall*)(i_net_channel*, int, bf_write*);
 			inline fn ofunc;
 			int __fastcall send_datagram(i_net_channel* thisptr, int edx, bf_write* datagram);
+		}
+
+		namespace get_vcollide {
+			using fn = vcollide_t*(__fastcall*)(void*, void*, int);
+			inline fn ofunc;
+			vcollide_t* __fastcall get_vcollide(void* edx, void* ecx, int vcollide_index);
+		}
+
+		namespace enforce_competitive_cvar {
+			void __cdecl enforce_competitive_cvar(const char* cvar_name, float a2, float a3, int a4);
 		}
 
 		namespace particle {

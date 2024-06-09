@@ -13,6 +13,14 @@ namespace features::misc
 
 	inline hit_info_t hitinfo;
 
+	struct trace_data_t
+	{
+		vec3_t position;
+		float time;
+	};
+
+	inline std::vector<trace_data_t> trace_logs;
+
 	void fix_mouse_delta(c_usercmd* cmd);
 
 	void checkpoint_system();
@@ -27,6 +35,17 @@ namespace features::misc
 	void spread_circle();
 	void big_scene_indicators();
 	void preserve_killfeed();
+	void penetration_crosshair();
+	void unlock_cvars();
+
+	namespace bullet_impact
+	{
+		void client();
+		void server(vec3_t position);
+		void trace(vec3_t position);
+		void event(i_game_event* event);
+	}
+
 	void hit_info(i_game_event* event);
 
 	namespace hitmarker 

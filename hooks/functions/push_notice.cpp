@@ -67,6 +67,9 @@ void __fastcall sdk::hooks::push_notice::push_notice(int ecx, int edx, const cha
 	case FNV1A::HashConst("#_print_pixelsurf"):
 		return print_text(ecx, edx, xs("pixelsurfed"));
 		break;
+	case FNV1A::HashConst("#_print_unlock_convar"):
+		return print_text(ecx, edx, xs("unlocked convars"));
+		break;
 	case FNV1A::HashConst("#_print_hit_1"):
 		return print_text(ecx, edx, std::vformat(xs("hit {} for {} damage ({} remaining)."), std::make_format_args(features::misc::hitinfo.player_name.c_str(), features::misc::hitinfo.damage, features::misc::hitinfo.health)));
 		break;

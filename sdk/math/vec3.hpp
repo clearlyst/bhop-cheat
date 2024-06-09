@@ -88,8 +88,9 @@ public:
 		return sqrt(dx * dx + dy * dy + dz * dz);
 	}
 
-	float dot(const vec3_t other) {
-		return (x * other.x + y * other.y + z * other.z);
+	float dot(const vec3_t& vOther) const
+	{
+		return (x * vOther.x + y * vOther.y + z * vOther.z);
 	}
 
 	float dot(const float* other) {
@@ -125,6 +126,7 @@ public:
 	float normalize_movement();
 	float normalize_in_place();
 	float normalize_float();
+	vec3_t ToVectors(vec3_t* side, vec3_t* up);
 	float distance_to(const vec3_t& other);
 	bool is_zero(void);
 	bool is_valid(void) const;

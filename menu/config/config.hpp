@@ -216,6 +216,33 @@ namespace c {
 		inline bool sniper_crosshair = false;
 		inline bool recoil_crosshair = false;
 
+		namespace bullet_impacts
+		{
+			inline bool enable = false;
+			inline float time = 3.00f;
+
+			namespace server
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace client
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace bullet_tracers
+		{
+			inline bool enable = false;
+			inline float time = 2.00f;
+			inline float local_entity_color[4]{ 1.f, 1.f, 1.f, 1.f };
+			inline float local_hurt_entity_color[4]{ 1.f, 1.f, 1.f, 1.f };
+			inline float enemy_entity_color[4]{ 1.f, 1.f, 1.f, 1.f };
+		};
+
 		namespace penetration_reticle
 		{
 			inline bool enable = false;
@@ -242,6 +269,7 @@ namespace c {
 			namespace can_fire
 			{
 				inline bool enable = false;
+				inline int style = 0;
 				inline float inactive_color[3]{ 1.f, 0.f, 0.f };
 				inline float active_color[3]{ 0.f, 1.f, 0.f };
 			};
@@ -284,8 +312,8 @@ namespace c {
 		inline float swayscale_value = 0.f;
 		inline char misc_clantag_text[256] = " ";
 		inline bool misc_clantag_spammer = false;
-		inline bool misc_clantag_rotation = false;
-		inline int misc_clantag_type = 0;
+		inline bool misc_clantag_reverse_rolling = false;
+		inline int misc_clantag_type = 1;
 		inline float misc_clantag_speed = 1.0f;
 		inline bool misc_hitmarker = false;
 		inline bool misc_hitmarker_sound = false;
@@ -501,53 +529,52 @@ namespace c {
 
 			namespace dropped_weapon
 			{
-				inline float color_text[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 180 / 255.0f };
-
 				namespace box
 				{
 					inline bool enable = false;
 					inline int type = 0;
 					inline bool outline[2] = { false, false };
 					inline float lenght = 5.f;
-					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 180 / 255.0f };
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 200 / 255.0f };
 				};
 
 				namespace text
 				{
 					inline bool enable = false;
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 200 / 255.0f };
 				};
 
 				namespace icon
 				{
 					inline bool enable = false;
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 200 / 255.0f };
 				};
 
 				namespace ammo_text
 				{
 					inline bool enable = false;
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 200 / 255.0f };
 				};
 
 				namespace ammo_bar
 				{
 					inline bool enable = false;
-					inline bool background = false;
-					inline int size = 1;
-					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 200 / 255.0f };
 				};
 			};
 
 			namespace thrown_grenade
 			{
-				inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 180 / 255.0f };
-
 				namespace text
 				{
 					inline bool enable = false;
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 200 / 255.0f };
 				};
 
 				namespace icon
 				{
 					inline bool enable = false;
+					inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 200 / 255.0f };
 				};
 			};
 		};
@@ -624,6 +651,44 @@ namespace c {
 			{
 				inline bool enable = false;
 				inline int style = 0;
+			};
+
+			namespace aspect_ratio_modulation
+			{
+				inline bool enable = false;
+				inline float amount = 1.78f;
+			};
+
+			namespace motionblur
+			{
+				inline bool enable = false;
+				inline int video_adapter = 1;
+				inline bool forward_move_blur = false;
+				inline float falling_minimum = 10.0f;
+				inline float falling_maximum = 20.0f;
+				inline float falling_intensity = 1.0f;
+				inline float rotate_intensity = 1.0f;
+				inline float strength = 1.0f;
+			};
+
+			namespace thirdperson
+			{
+				inline bool enable = false;
+				inline bool when_spectating = false;
+				inline int key = 0;
+				inline int key_s = 0;
+				inline bool turn_off_while[4] = { false, false, false, false };
+				inline int distance = 150;
+			};
+
+			namespace weather
+			{
+				inline bool enable = false;
+				inline int type = 1;
+				inline bool custom_density = false;
+				inline float density = 100.0f;
+				inline bool custom_radius = false;
+				inline float radius = 100.0f;
 			};
 		};
 

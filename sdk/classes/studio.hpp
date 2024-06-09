@@ -174,6 +174,7 @@ struct studio_hitbox_set_t {
 		return ( ( char* ) this ) + name_index;
 	}
 	inline studio_box_t* hitbox( int i ) const {
+		if (i > hitbox_count) return nullptr;
 		return ( studio_box_t* ) ( ( ( unsigned char* ) this ) + hitbox_index ) + i;
 	}
 };
