@@ -926,6 +926,35 @@ void features::misc::bullet_impact::event(i_game_event* event)
 			vec3_t position(event->get_float("x"), event->get_float("y"), event->get_float("z"));
 
 			server(position);
+
+			if (c::misc::bullet_tracers::enable && c::misc::bullet_tracers::local::enable)
+			{
+				BeamInfo_t beamInfo;
+				beamInfo.m_nType = 0; //TE_BEAMPOINTS
+				beamInfo.m_vecStart = position;
+				beamInfo.m_vecEnd = g::local->get_eye_pos();
+				beamInfo.m_pszModelName = ("sprites/purplelaser1.vmt");
+				beamInfo.m_flHaloScale = 0.0;
+				beamInfo.m_flWidth = 5.0f;
+				beamInfo.m_flEndWidth = 5.0f;
+				beamInfo.m_flFadeLength = 0.0f;
+				beamInfo.m_flAmplitude = 2;
+				beamInfo.m_flBrightness = 255.f;
+				beamInfo.m_flSpeed = 0.5f;
+				beamInfo.m_nStartFrame = 0.0;
+				beamInfo.m_flFrameRate = 0.0;
+				beamInfo.m_flRed = c::misc::bullet_tracers::local::color[0];
+				beamInfo.m_flGreen = c::misc::bullet_tracers::local::color[1];
+				beamInfo.m_flBlue = c::misc::bullet_tracers::local::color[2];
+				beamInfo.m_nSegments = 2;
+				beamInfo.m_bRenderable = true;
+				beamInfo.m_flLife = c::misc::bullet_tracers::time;
+				beamInfo.m_nFlags = 0;
+				Beam_t* myBeam = interfaces::render_beams->CreateBeamPoints(beamInfo);
+
+				if (myBeam)
+					interfaces::render_beams->DrawBeam(myBeam);
+			}
 		}
 		break;
 	}
@@ -953,7 +982,7 @@ void features::misc::bullet_impact::client()
 
 	for (auto i = client_impact_list.Count(); i > last_count; --i)
 	{
-		interfaces::debug_overlay->box_overlay(client_impact_list[i - 1].position, vec3_t(-2.0f, -2.0f, -2.0f), vec3_t(2.0f, 2.0f, 2.0f), vec3_t(0.0f, 0.0f, 0.0f), (int)c::misc::bullet_impacts::client::color[0] * 255.0f, (int)c::misc::bullet_impacts::client::color[1] * 255.0f, (int)c::misc::bullet_impacts::client::color[2] * 255.0f, (int)c::misc::bullet_impacts::client::color[3] * 255.0f, c::misc::bullet_tracers::time);
+		interfaces::debug_overlay->box_overlay(client_impact_list[i - 1].position, vec3_t(-2.0f, -2.0f, -2.0f), vec3_t(2.0f, 2.0f, 2.0f), vec3_t(0.0f, 0.0f, 0.0f), (int)c::misc::bullet_impacts::client::color[0] * 255.0f, (int)c::misc::bullet_impacts::client::color[1] * 255.0f, (int)c::misc::bullet_impacts::client::color[2] * 255.0f, (int)c::misc::bullet_impacts::client::color[3] * 255.0f, c::misc::bullet_impacts::time);
 	}
 
 	if (client_impact_list.Count() != last_count)
@@ -979,12 +1008,7 @@ void features::misc::bullet_impact::server(vec3_t position)
 		return;
 	}
 
-	interfaces::debug_overlay->box_overlay(position, vec3_t(-2.0f, -2.0f, -2.0f), vec3_t(2.0f, 2.0f, 2.0f), vec3_t(0.0f, 0.0f, 0.0f), (int)c::misc::bullet_impacts::server::color[0] * 255.0f, (int)c::misc::bullet_impacts::server::color[1] * 255.0f, (int)c::misc::bullet_impacts::server::color[2] * 255.0f, (int)c::misc::bullet_impacts::server::color[3] * 255.0f, c::misc::bullet_tracers::time);
-}
-
-void features::misc::bullet_impact::trace(vec3_t position)
-{
-
+	interfaces::debug_overlay->box_overlay(position, vec3_t(-2.0f, -2.0f, -2.0f), vec3_t(2.0f, 2.0f, 2.0f), vec3_t(0.0f, 0.0f, 0.0f), (int)c::misc::bullet_impacts::server::color[0] * 255.0f, (int)c::misc::bullet_impacts::server::color[1] * 255.0f, (int)c::misc::bullet_impacts::server::color[2] * 255.0f, (int)c::misc::bullet_impacts::server::color[3] * 255.0f, c::misc::bullet_impacts::time);
 }
 
 void features::misc::penetration_crosshair()

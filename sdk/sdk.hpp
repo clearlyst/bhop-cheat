@@ -617,6 +617,8 @@ public:
 	NETVAR("DT_EnvTonemapController", "m_bUseCustomAutoExposureMax", use_custom_auto_exposure_max, bool)
 	NETVAR("DT_EnvTonemapController", "m_flCustomAutoExposureMax", custom_auto_exposure_max, float)
 
+	NETVAR("DT_BaseCSGrenadeProjectile", "m_nExplodeEffectTickBegin", explode_effect_tick_begin, int)
+
 	NETVAR("DT_Precipitation", "m_nPrecipType", precip_type, int)
 
 	NETVAR("DT_BaseAnimating", "m_nHitboxSet", hitbox_set, int)

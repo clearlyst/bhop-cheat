@@ -42,7 +42,6 @@ namespace features::misc
 	{
 		void client();
 		void server(vec3_t position);
-		void trace(vec3_t position);
 		void event(i_game_event* event);
 	}
 

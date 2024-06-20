@@ -496,24 +496,40 @@ void visuals() {
 
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, 0));
 
-            ImGui::Checkbox("enable glow", &c::visuals::glow);
-            if (c::visuals::glow)
+            ImGui::Checkbox("enable glow", &c::visuals::glow::enable);
+            ImGui::Checkbox("visible glow", &c::visuals::glow::players::visible);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##glow visible color", c::visuals::glow::players::color::visible, w_alpha);
+            if (c::visuals::glow::enable)
             {
-                ImGui::SameLine();
-                ImGui::ColorEdit4("##glow visible color", c::visuals::glow_visible_clr, w_alpha);
-                ImGui::SameLine();
-                ImGui::ColorEdit4("##glow invisible color", c::visuals::glow_invisible_clr, w_alpha);
-                ImGui::Text("glow style");
-                ImGui::Combo("##glow type", &c::visuals::glow_style, "default\0pusling\0outline\0outline pulse\0");
+                ImGui::Text("glow type");
+                ImGui::Combo("##glow_type", &c::visuals::glow::players::type, "default\0pusling\0outline\0outline pulse\0");
             }
-            ImGui::Checkbox("enable dlight", &c::visuals::players::dlight::enable);
+            ImGui::Checkbox("invisible glow", &c::visuals::glow::players::invisible);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##glow invisible color", c::visuals::glow::players::color::invisible, w_alpha);
+            ImGui::Checkbox("player world glow", &c::visuals::players::dlight::enable);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##dlight color", c::visuals::players::dlight::color, w_alpha);
             if (c::visuals::players::dlight::enable)
             {
-                ImGui::SameLine();
-                ImGui::ColorEdit4("##dlight color", c::visuals::players::dlight::color, w_alpha);
-
                 ImGui::SliderFloat("radius", &c::visuals::players::dlight::radius, 25.0f, 200.0f, ("%.2f"));
             }
+            ImGui::Checkbox("weapon glow", &c::visuals::glow::weapon::enable);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##glow weapon color", c::visuals::glow::weapon::color, w_alpha);
+            ImGui::Checkbox("defuse kit/bomb glow", &c::visuals::glow::bomb_and_defuse_kit::enable);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##glow bomb_and_defuse_kit color", c::visuals::glow::bomb_and_defuse_kit::color, w_alpha);
+            ImGui::Checkbox("planted glow", &c::visuals::glow::planted_bomb::enable);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##glow planted_bomb color", c::visuals::glow::planted_bomb::color, w_alpha);
+            ImGui::Checkbox("grenade glow", &c::visuals::glow::grenade::enable);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##glow grenade color", c::visuals::glow::grenade::color, w_alpha);
+            ImGui::Checkbox("hostage glow", &c::visuals::glow::hostage::enable);
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##glow hostage color", c::visuals::glow::hostage::color, w_alpha);
 
             ImGui::PopStyleVar();
             ImGui::EndChild();
@@ -690,20 +706,28 @@ void visuals() {
                     ImGui::SameLine();
                     ImGui::ColorEdit4("##grenade prediction color", c::misc::nadepred_clr, no_alpha);
                 }
-                ImGui::Checkbox("bullet tracers (wip)", &c::misc::bullet_tracers::enable);
+                ImGui::Checkbox("bullet tracers", &c::misc::bullet_tracers::enable);
                 if (c::misc::bullet_tracers::enable)
                 {
-                    ImGui::SliderFloat("life time", &c::misc::bullet_tracers::time, 0.0f, 30.0f, ("%.2f"));
-
-                    ImGui::Text("local tracer color");
-                    ImGui::SameLine();
-                    ImGui::ColorEdit4("##LTC", c::misc::bullet_tracers::local_entity_color, w_alpha);
-                    ImGui::Text("hurt enemy tracer color");
-                    ImGui::SameLine();
-                    ImGui::ColorEdit4("##HETC", c::misc::bullet_tracers::local_hurt_entity_color, w_alpha);
-                    ImGui::Text("enemy tracer color");
-                    ImGui::SameLine();
-                    ImGui::ColorEdit4("##ETC", c::misc::bullet_tracers::enemy_entity_color, w_alpha);
+                    ImGui::SliderFloat("life time", &c::misc::bullet_tracers::time, 0.0f, 300.0f, ("%.2f"));
+                    ImGui::Checkbox("local", &c::misc::bullet_tracers::local::enable);
+                    if (c::misc::bullet_tracers::local::enable)
+                    {
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##bt local color", c::misc::bullet_tracers::local::color, w_alpha);
+                    }
+                    ImGui::Checkbox("entity", &c::misc::bullet_tracers::entity::enable);
+                    if (c::misc::bullet_tracers::entity::enable)
+                    {
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##bt entity color", c::misc::bullet_tracers::entity::color, w_alpha);
+                    }
+                    ImGui::Checkbox("local hit entity", &c::misc::bullet_tracers::hit_entity::enable);
+                    if (c::misc::bullet_tracers::hit_entity::enable)
+                    {
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##bt lhe color", c::misc::bullet_tracers::hit_entity::color, w_alpha);
+                    }
                 }
                 ImGui::Checkbox("impact boxes", &c::misc::bullet_impacts::enable);
                 if (c::misc::bullet_impacts::enable)
@@ -753,7 +777,7 @@ void visuals() {
                     ImGui::SliderFloat("rotation y", &c::visuals::world::shadow::y, -1000.0f, 1000.0f, ("%.2f"));
                     ImGui::SliderFloat("rotation z", &c::visuals::world::shadow::z, -1000.0f, 1000.0f, ("%.2f"));
                 }
-                ImGui::Checkbox("precipitation modulation", &c::visuals::world::weather::enable);
+                ImGui::Checkbox("precipitation modulation (wip)", &c::visuals::world::weather::enable);
                 if (c::visuals::world::weather::enable)
                 {
                     ImGui::Text("type of weather");
@@ -1591,6 +1615,7 @@ void skins() {
             static char search_glove_skin[256] = "";
             static ImGuiTextFilter filter;
 
+
             switch (menu::skin_selection) {
             case 0:
                 ImGui::Text(("knife skin"));
@@ -1605,6 +1630,7 @@ void skins() {
                             if (name == features::skins::parser_skins[i].name)
                                 ImGui::PushID(std::hash<std::string>{}(features::skins::parser_skins[i].name)* i);
 
+         
                                 if (ImGui::Selectable(features::skins::parser_skins[i].name.c_str(), &is_selected)) {
                                     c::skins::knife_changer_vector_paint_kit = i;
                                     c::skins::knife_changer_paint_kit = features::skins::parser_skins[c::skins::knife_changer_vector_paint_kit].id;

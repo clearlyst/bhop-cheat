@@ -224,23 +224,38 @@ namespace c {
 			namespace server
 			{
 				inline bool enable = false;
-				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+				inline float color[4]{ 1.f, 1.f, 1.f, 127 / 255.0f };
 			};
 
 			namespace client
 			{
 				inline bool enable = false;
-				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+				inline float color[4]{ 1.f, 1.f, 1.f, 127 / 255.0f };
 			};
 		};
 
 		namespace bullet_tracers
 		{
 			inline bool enable = false;
-			inline float time = 2.00f;
-			inline float local_entity_color[4]{ 1.f, 1.f, 1.f, 1.f };
-			inline float local_hurt_entity_color[4]{ 1.f, 1.f, 1.f, 1.f };
-			inline float enemy_entity_color[4]{ 1.f, 1.f, 1.f, 1.f };
+			inline float time = 3.0f;
+
+			namespace local
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace entity
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+
+			namespace hit_entity
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
 		};
 
 		namespace penetration_reticle
@@ -368,10 +383,53 @@ namespace c {
 		inline int key = 0;
 		inline int key_s = 3;
 
-		inline bool glow = false;
-		inline int glow_style = 0;
-		inline float glow_visible_clr[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline float glow_invisible_clr[4]{ 1.f, 1.f, 1.f, 1.f };
+		namespace glow
+		{
+			inline bool enable = false;
+
+			namespace players
+			{
+				inline bool visible = false;
+				inline bool invisible = false;
+				inline int type = 0;
+
+				namespace color
+				{
+					inline float visible[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+					inline float invisible[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+				};
+			};
+
+			namespace bomb_and_defuse_kit
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+			};
+
+			namespace weapon
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+			};
+
+			namespace planted_bomb
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+			};
+
+			namespace grenade
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+			};
+
+			namespace hostage
+			{
+				inline bool enable = false;
+				inline float color[4]{ 1.0f, 1.0f, 1.0f, 1.0f };
+			};
+		};
 
 		namespace players
 		{
