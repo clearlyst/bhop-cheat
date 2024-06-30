@@ -15,16 +15,6 @@ void __fastcall sdk::hooks::draw_model_execute::draw_model_execute(void* _this, 
 		return 	draw_model_execute_original(_this, edx, ctx, state, info, matrix);
 	}
 
-	if (c::visuals::player_sleeves::enable && strstr(info.model->name, "sleeve"))
-	{
-		return;
-	}
-
-	if (c::visuals::player_model::enable && strstr(info.model->name, "player")) 
-	{ 
-		return;
-	}
-
 	features::chams::run_bt(ctx, state, info, matrix);
 	features::chams::run(ctx, state, info, matrix);
 

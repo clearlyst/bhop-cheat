@@ -1,5 +1,6 @@
 #include "../visuals/visuals.hpp"
 #include "../../menu/config/config.hpp"
+#include <algorithm>
 
 bool features::visuals::get_player_box(player_t* entity, bbox_t& in)
 {
@@ -205,11 +206,16 @@ void features::visuals::player::run()
 
 		const int index = entity->index();
 
-		const float delta_time = 1.f / c::visuals::players::fade::time * interfaces::globals->frame_time;
-
 		if (c::visuals::players::fade::enable)
 		{
-			entity->dormant() || !entity->is_alive() ? player_alpha[index] -= delta_time : player_alpha[index] += delta_time;
+			if (entity->dormant() || !entity->is_alive())
+				player_alpha[index] = max(player_alpha[index] - interfaces::globals->frame_time * c::visuals::players::fade::time, 0.f);
+			else
+				player_alpha[index] = min(player_alpha[index] + interfaces::globals->frame_time * c::visuals::players::fade::time, 1.f);
+
+			/*
+			
+			entity->dormant() || !entity->is_alive() ? player_alpha[index] -= interfaces::globals->frame_time * c::visuals::players::fade::time : player_alpha[index] += interfaces::globals->frame_time * c::visuals::players::fade::time;
 
 			player_alpha[index] = std::clamp(player_alpha[index], 0.f, 1.f);
 
@@ -217,6 +223,8 @@ void features::visuals::player::run()
 			{
 				continue;
 			}
+
+			*/
 		}
 		else
 		{
@@ -285,12 +293,12 @@ void features::visuals::player::run()
 
 		if (c::visuals::players::box::enable)
 		{
-			draw_box(entity, _box, c::visuals::players::colors::custom ? box : check_on_see ? visible : invisible, c::visuals::players::colors::custom ? box_outline : color_t(0, 0, 0, 255));
+			draw_box(entity, _box, c::visuals::players::colors::custom ? box : check_on_see ? visible : invisible, box_outline);
 		}
 
 		if (c::visuals::players::health_bar::enable)
 		{
-			draw_health_bar(entity, _box, c::visuals::players::colors::custom ? health_bar : check_on_see ? visible : invisible, health_bar_upper, health_bar_lower, c::visuals::players::colors::custom ? health_bar_outline : color_t(0, 0, 0, 255));
+			draw_health_bar(entity, _box, c::visuals::players::colors::custom ? health_bar : check_on_see ? visible : invisible, health_bar_upper, health_bar_lower, health_bar_outline);
 		}
 
 		if (c::visuals::players::skeleton::enable)
@@ -1028,6 +1036,22 @@ void features::visuals::throwed_grenade(entity_t* entity)
 	}
 }
 
+float calculate_distance(const vec3_t& pos1, const vec3_t& pos2) {
+	float dx = pos1.x - pos2.x;
+	float dy = pos1.y - pos2.y;
+	float dz = pos1.z - pos2.z;
+	return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+color_t interpolate_based_on_distance(const color_t& first, const color_t& second, const float distance) {
+	return color_t(
+		first.r() + distance * (second.r() - first.r()),
+		first.g() + distance * (second.g() - first.g()),
+		first.b() + distance * (second.b() - first.b()),
+		first.a() + distance * (second.a() - first.a())
+	);
+}
+
 void features::visuals::dropped_weapon(entity_t* entity, bbox_t bbox)
 {
 	auto weapon = (weapon_t*)entity;
@@ -1067,6 +1091,10 @@ void features::visuals::dropped_weapon(entity_t* entity, bbox_t bbox)
 		return;
 	}
 
+	float distance = calculate_distance(g::local->abs_origin(), droppedweapon_origin);
+	float max_distance = c::visuals::players::dropped_weapon::distance;
+	float interpolation_factor = std::clamp(distance / max_distance, 0.0f, 1.0f);
+
 	std::string droppedweapon_name = weapon->weapon_name_definition();
 	std::string droppedweapon_icon = u8toStr(weapon->get_wpn_icon());
 	std::string currentammo_text = std::to_string(current);
@@ -1081,29 +1109,29 @@ void features::visuals::dropped_weapon(entity_t* entity, bbox_t bbox)
 		case 0:
 			if (c::visuals::players::dropped_weapon::box::outline[0])
 			{
-				im_render.drawrect(bbox.x - 1, bbox.y - 1, bbox.w + 2, bbox.h + 2, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+				im_render.drawrect(bbox.x - 1, bbox.y - 1, bbox.w + 2, bbox.h + 2, interpolate_based_on_distance(color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]), color_t(0.0f, 0.0f, 0.0f, 0.0f), interpolation_factor));
 			}
 
 			if (c::visuals::players::dropped_weapon::box::outline[1])
 			{
-				im_render.drawrect(bbox.x + 1, bbox.y + 1, bbox.w - 2, bbox.h - 2, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+				im_render.drawrect(bbox.x + 1, bbox.y + 1, bbox.w - 2, bbox.h - 2, interpolate_based_on_distance(color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]), color_t(0.0f, 0.0f, 0.0f, 0.0f), interpolation_factor));
 			}
 
-			im_render.drawrect(bbox.x, bbox.y, bbox.w, bbox.h, c::visuals::players::dropped_weapon::box::color);
+			im_render.drawrect(bbox.x, bbox.y, bbox.w, bbox.h, interpolate_based_on_distance(color_t(c::visuals::players::dropped_weapon::box::color), color_t(c::visuals::players::dropped_weapon::box::color, 0.0f), interpolation_factor));
 
 			break;
 		case 1:
 			if (c::visuals::players::dropped_weapon::box::outline[0])
 			{
-				im_render.drawcornerbox(bbox.x - 1, bbox.y - 1, bbox.w + 2, bbox.h + 2, c::visuals::players::dropped_weapon::box::lenght, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+				im_render.drawcornerbox(bbox.x - 1, bbox.y - 1, bbox.w + 2, bbox.h + 2, c::visuals::players::dropped_weapon::box::lenght, interpolate_based_on_distance(color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]), color_t(0.0f, 0.0f, 0.0f, 0.0f), interpolation_factor));
 			}
 
 			if (c::visuals::players::dropped_weapon::box::outline[1])
 			{
-				im_render.drawcornerbox(bbox.x + 1, bbox.y + 1, bbox.w - 2, bbox.h - 2, c::visuals::players::dropped_weapon::box::lenght, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]));
+				im_render.drawcornerbox(bbox.x + 1, bbox.y + 1, bbox.w - 2, bbox.h - 2, c::visuals::players::dropped_weapon::box::lenght, interpolate_based_on_distance(color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::box::color[3]), color_t(0.0f, 0.0f, 0.0f, 0.0f), interpolation_factor));
 			}
 
-			im_render.drawcornerbox(bbox.x, bbox.y, bbox.w, bbox.h, c::visuals::players::dropped_weapon::box::lenght, c::visuals::players::dropped_weapon::box::color);
+			im_render.drawcornerbox(bbox.x, bbox.y, bbox.w, bbox.h, c::visuals::players::dropped_weapon::box::lenght, interpolate_based_on_distance(color_t(c::visuals::players::dropped_weapon::box::color), color_t(c::visuals::players::dropped_weapon::box::color, 0.0f), interpolation_factor));
 
 			break;
 		}
@@ -1117,8 +1145,8 @@ void features::visuals::dropped_weapon(entity_t* entity, bbox_t bbox)
 
 			int width = ((box_w * weapon->clip1_count()) / weapon_data->m_iMaxClip);
 
-			im_render.drawrectfilled(bbox.x - 1, bbox.y + bbox.h + 2, bbox.w + 2, 3, color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::ammo_bar::color[3]));
-			im_render.drawrectfilled(bbox.x, bbox.y + bbox.h + 3, bbox.w, 1, c::visuals::players::dropped_weapon::ammo_bar::color);
+			im_render.drawrectfilled(bbox.x - 1, bbox.y + bbox.h + 2, bbox.w + 2, 3, interpolate_based_on_distance(color_t(0.0f, 0.0f, 0.0f, c::visuals::players::dropped_weapon::ammo_bar::color[3]), color_t(0.0f, 0.0f, 0.0f, 0.0f), interpolation_factor));
+			im_render.drawrectfilled(bbox.x, bbox.y + bbox.h + 3, bbox.w, 1, interpolate_based_on_distance(color_t(c::visuals::players::dropped_weapon::ammo_bar::color), color_t(c::visuals::players::dropped_weapon::ammo_bar::color, 0.0f), interpolation_factor));
 
 			offset += 4;
 		}
@@ -1126,20 +1154,20 @@ void features::visuals::dropped_weapon(entity_t* entity, bbox_t bbox)
 
 	if (c::visuals::players::dropped_weapon::icon::enable)
 	{
-		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, 12.0f, fonts::icon_font, droppedweapon_icon, true, color_t(c::visuals::players::dropped_weapon::icon::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, 12.0f, fonts::icon_font, droppedweapon_icon, true, interpolate_based_on_distance(color_t(c::visuals::players::dropped_weapon::icon::color), color_t(c::visuals::players::dropped_weapon::icon::color, 0.0f), interpolation_factor), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 
 		offset += 13;
 	}
 
 	if (c::visuals::players::dropped_weapon::text::enable)
 	{
-		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, droppedweapon_name, true, color_t(c::visuals::players::dropped_weapon::text::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, droppedweapon_name, true, interpolate_based_on_distance(color_t(c::visuals::players::dropped_weapon::text::color), color_t(c::visuals::players::dropped_weapon::text::color, 0.0f), interpolation_factor), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 
 		offset += 13;
 	}
 
 	if (c::visuals::players::dropped_weapon::ammo_text::enable && weapon->isgun())
 	{
-		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, ("[") + currentammo_text + (" / ") + maxammo_text + ("]"), true, color_t(c::visuals::players::dropped_weapon::ammo_text::color), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
+		im_render.text(bbox.x + (bbox.w / 2), bbox.y + bbox.h + offset, c::fonts::esp_sub_size, fonts::sub_esp_font, ("[") + currentammo_text + (" / ") + maxammo_text + ("]"), true, interpolate_based_on_distance(color_t(c::visuals::players::dropped_weapon::ammo_text::color), color_t(c::visuals::players::dropped_weapon::ammo_text::color, 0.0f), interpolation_factor), c::fonts::esp_sub_flag[9], c::fonts::esp_sub_flag[10]);
 	}
 }

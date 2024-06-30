@@ -224,13 +224,13 @@ namespace c {
 			namespace server
 			{
 				inline bool enable = false;
-				inline float color[4]{ 1.f, 1.f, 1.f, 127 / 255.0f };
+				inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
 			};
 
 			namespace client
 			{
 				inline bool enable = false;
-				inline float color[4]{ 1.f, 1.f, 1.f, 127 / 255.0f };
+				inline float color[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
 			};
 		};
 
@@ -335,7 +335,6 @@ namespace c {
 		inline bool misc_hit_info[3] = { false, false, false };
 		inline bool misc_hitchams = false;
 		inline float misc_hitchams_clr[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline int misc_hitmarker_sound_type = 0;
 		inline bool nadepred = false;
 		inline float nadepred_clr[3]{ 1.f, 1.f, 1.f };
 		inline bool freecam = false;
@@ -587,6 +586,8 @@ namespace c {
 
 			namespace dropped_weapon
 			{
+				inline float distance = 1500.0f;
+
 				namespace box
 				{
 					inline bool enable = false;
@@ -755,16 +756,6 @@ namespace c {
 			inline bool enable = false;
 		};
 
-		namespace player_model
-		{
-			inline bool enable = false;
-		};
-
-		namespace player_sleeves
-		{
-			inline bool enable = false;
-		};
-
 		namespace scope
 		{
 			inline bool enable = false;
@@ -789,27 +780,139 @@ namespace c {
 		};
 	}
 
-	namespace chams {
-		inline bool backtrack_chams = false;
-		inline bool backtrack_chams_gradient = false;
-		inline bool backtrack_chams_invisible = false;
-		inline bool backtrack_chams_draw_all_ticks = false;
-		inline float backtrack_chams_clr1[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline float backtrack_chams_clr2[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline bool visible_chams = false;
-		inline bool visible_wireframe = false; //
-		inline float visible_chams_clr[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline bool visible_chams_ov = false; //
-		inline bool visible_wireframe_ov = false; //
-		inline float visible_chams_clr_ov[4]{ 1.f, 1.f, 1.f, 1.f }; //
-		inline bool invisible_chams = false;
-		inline float invisible_chams_clr[4]{ 1.f, 1.f, 1.f, 1.f };
-		inline bool invisible_wireframe = false; //
-		inline int cham_type_bt = 0;
-		inline int cham_type = 0;
-		inline int cham_type_overlay = 0; //
-		inline int chams_backrack_ticks = 0;
-		inline int type_p = 0;
+	namespace chams 
+	{
+		namespace visible
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline int type = 0;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace invisible
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline int type = 0;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace visible_attachment
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline int type = 0;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace invisible_attachment
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline int type = 0;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace sleeves
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline int type = 0;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace weapon
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline int type = 0;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace hands
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline int type = 0;
+			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
+
+		namespace backtrack
+		{
+			inline bool enable = false;
+			inline bool hide_original_model = false;
+			inline bool gradient = false;
+			inline bool invisible = false;
+			inline bool draw_all_ticks = false;
+			inline int type = 0;
+			inline float color_1[4]{ 1.f, 1.f, 1.f, 1.f };
+			inline float color_2[4]{ 1.f, 1.f, 1.f, 1.f };
+
+			namespace overlay
+			{
+				inline bool enable = false;
+				inline int index = 0;
+				inline int type = 0;
+				inline float color[4]{ 1.f, 1.f, 1.f, 1.f };
+			};
+		};
 	}
 
 	namespace fonts {

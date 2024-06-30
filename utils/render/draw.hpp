@@ -26,7 +26,7 @@ public:
 	void drawrectfilled(const float x, const float y, const float w, const float h, const color_t& color, const ImDrawFlags flags = 0);
 	void drawrectfilledgradient(const float x, const float y, const float w, const float h, const color_t& colUprLeft, const color_t& colUprRight, const color_t& colBotRight, const color_t& colBotLeft);
 	void drawrect(const float x, const float y, const float w, const float h, const color_t& color, const ImDrawFlags flags = 0, const float thickness = 1.0f);
-	void drawcornerbox(const float x, const float y, const float w, const float h, const float lenght, const color_t& colour);
+	static void drawcornerbox(const float x, const float y, const float w, const float h, const float length, const color_t& colour);
 	void drawcircle(const float x, const float y, const float radius, const int points, const color_t& color, const float thickness = 1.0f);
 	void drawtrianglefilled(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const color_t& color);
 	void drawpolygon(const std::vector<ImVec2>& verts, const color_t& color);

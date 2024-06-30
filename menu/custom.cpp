@@ -112,6 +112,17 @@ void menu::load_font_index() {
         }
         c::fonts::esp_sub_font = fonts::selected_font_index_sub_esp;
     }
+
+    fonts::selected_font_index_debug_information = c::fonts::debug_information_font;
+    if (fonts::selected_font_index_debug_information >= 0) {
+        if (menu::fonts[fonts::selected_font_index_debug_information] == "default") {
+            fonts::font_directory_debug_information = "C:/windows/fonts/tahomabd.ttf";
+        }
+        else {
+            fonts::font_directory_debug_information = "C:/windows/fonts/" + menu::fonts[fonts::selected_font_index_debug_information];
+        }
+        c::fonts::debug_information_font = fonts::selected_font_index_debug_information;
+    }
 }
 
 

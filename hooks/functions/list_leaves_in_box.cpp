@@ -12,7 +12,7 @@ int __fastcall sdk::hooks::list_leaves_in_box::list_leaves_in_box(void* bsp, voi
 	static auto list_leaves = find_pattern("client.dll", "56 52 FF 50 18") + 5;
 	auto info = *reinterpret_cast<renderable_info_t**>(reinterpret_cast<uintptr_t>(_AddressOfReturnAddress()) + 0x14);
 
-	if (!c::chams::invisible_chams || (_ReturnAddress()) != list_leaves)
+	if (!c::chams::invisible::enable || c::chams::invisible_attachment::enable || (_ReturnAddress()) != list_leaves)
 		return ofunc(bsp, mins, maxs, list, list_max);
 
 	if (!info || !info->renderable)

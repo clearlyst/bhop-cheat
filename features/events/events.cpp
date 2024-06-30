@@ -95,9 +95,16 @@ int hooked_events::get_event_debug_id(void) {
 
 void hooked_events::setup() {
 	debug_id = EVENT_DEBUG_ID_INIT;
-	interfaces::event_manager->add_listener(this, "player_hurt", false);
+
 	interfaces::event_manager->add_listener(this, "round_start", false);
+	interfaces::event_manager->add_listener(this, "round_end", false);
+	interfaces::event_manager->add_listener(this, "player_death", false);
+	interfaces::event_manager->add_listener(this, "player_hurt", false);
 	interfaces::event_manager->add_listener(this, "bullet_impact", false);
+	interfaces::event_manager->add_listener(this, "vote_cast", false);
+	interfaces::event_manager->add_listener(this, "item_purchase", false);
+	interfaces::event_manager->add_listener(this, "bomb_beginplant", false);
+	interfaces::event_manager->add_listener(this, "bomb_abortplant", false);
 
 	printf("events initialized!\n");
 }

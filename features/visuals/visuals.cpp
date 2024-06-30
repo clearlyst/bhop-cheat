@@ -108,7 +108,7 @@ void features::visuals::particles()
 		interfaces::console->get_convar("mat_fullbright")->set_value(mat_fullbright);
 	}
 
-	if (c::visuals::world::skybox::enable)
+	if (c::visuals::world::skybox::enable && (c::visuals::world::skybox::style >= 1))
 	{
 		interfaces::console->get_convar("r_3dsky")->set_value(0);
 	}

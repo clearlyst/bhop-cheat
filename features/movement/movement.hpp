@@ -47,7 +47,7 @@ namespace features::movement
 	void velocity_indicator();
 	void stamina_indicator();
 	void keys_indicator();
-	void add(std::string name, bool enabled, color_t clr);
+	void add(std::string name, bool enabled, color_t color);
 	void indicators();
 	void graphs_data();
 	void velocity_graph_indicator();
@@ -59,12 +59,6 @@ namespace features::movement
 	{
 		bool pixelsurf_ducked = false;
 		int pixelsurf_ticks = 0;
-	};
-
-	struct indicator
-	{
-		color_t clr;
-		float alpha;
 	};
 
 	struct velocity_data_t
@@ -85,5 +79,5 @@ namespace features::movement
 
 	inline std::vector<velocity_data_t> velocity_data;
 	inline std::vector<stamina_data_t> stamina_data;
-	inline std::unordered_map<std::string, indicator> m_indicators;
+	inline std::unordered_map<std::string, color_t> indicators_data;
 }

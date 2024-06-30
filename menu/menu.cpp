@@ -15,11 +15,10 @@ static const char* key_back_for[4] = { "ej", "mj", "lj", "lej" };
 static const char* edge_jump_for[3] = { "lj", "mj", "lej" };
 static const char* detect_chat_for[3] = { "jb", "eb", "ps" };
 static const char* indicators[14] = { "jb", "ej", "lj", "eb", "mj", "sh", "ps", "al", "ad", "as", "bb", "msl", "so", "null" };
-const char* font_flags[] = { "no hinting","no autohint","light hinting","mono hinting","bold","italic","no antialiasing","load color","bitmap","dropshadow","outline" };
-const char* thirdperson[] = { "scoped", "nade", "knife", "zeus" };
-const char* fnt_tab[] = { "main indicator font", "sub indicator font", "esp font", "sub esp font", "scene font", "sub scene font" };
-static const char* materials[] = { "regular", "flat", "crystal", "pearlescent", "reverse pearlescent", "fog", "damascus", "model" };
-static const char* chams_overlay_types[] = { "glow", "outline", "metallic", "snow" };
+const char* font_flags[11] = { "no hinting","no autohint","light hinting","mono hinting","bold","italic","no antialiasing","load color","bitmap","drop shadow","outline" };
+const char* thirdperson[4] = { "scoped", "nade", "knife", "zeus" };
+const char* fnt_tab[6] = { "main indicator font", "sub indicator font", "esp font", "sub esp font", "scene font", "sub scene font" };
+static const char* materials[10] = { "textured", "flat", "metalic", "plastic", "elixir", "glow", "wireframe", "crystal", "space", "glass" };
 static const char* flags[7] = { "armour", "money", "flashed", "scoped","reloading", "defusing", "rescuing" };
 static const char* outline_type[2] = { "outter", "inner" };
 static const char* line_type[3] = { "top", "center", "bottom" };
@@ -467,6 +466,7 @@ void visuals() {
                     ImGui::SameLine();
                     ImGui::ColorEdit4("##dropped weapon ammo bar color", c::visuals::players::dropped_weapon::ammo_bar::color, w_alpha);
                 }
+                ImGui::SliderFloat("dropped weapon distance show", &c::visuals::players::dropped_weapon::distance, 0.0f, 5000.0f, ("%.1f"));
                 ImGui::Checkbox("thrown grenade name", &c::visuals::players::thrown_grenade::text::enable);
                 if (c::visuals::players::thrown_grenade::text::enable)
                 {
@@ -536,7 +536,7 @@ void visuals() {
         }
     }
     ImGui::NextColumn(); {
-        ImGui::BeginChild(("visuals.chams"), ImVec2{0, 190 }, true, ImGuiWindowFlags_MenuBar); {
+        ImGui::BeginChild("visuals.chams", ImVec2{0, 190 }, true, ImGuiWindowFlags_MenuBar); {
             if (ImGui::BeginMenuBar()) {
                 ImGui::TextUnformatted("chams");
                 ImGui::EndMenuBar();
@@ -548,49 +548,106 @@ void visuals() {
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0));
 
-                ImGui::Checkbox(("enable visible chams"), &c::chams::visible_chams);
+                ImGui::Checkbox("visible model", &c::chams::visible::enable);
                 ImGui::SameLine();
-                ImGui::ColorEdit4(("##visible clr"), c::chams::visible_chams_clr, w_alpha);
-                ImGui::Checkbox(("visible wireframe"), &c::chams::visible_wireframe);
-                ImGui::Checkbox(("enable invisible chams"), &c::chams::invisible_chams);
+                ImGui::ColorEdit4("##visible model color", c::chams::visible::color, w_alpha);
+                if (c::chams::visible::enable)
+                {
+                    ImGui::Checkbox("hide original model##visiblemodel", &c::chams::visible::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstylevisiblemodel", &c::chams::visible::type, materials, IM_ARRAYSIZE(materials));
+                }
+                ImGui::Checkbox("invisible model", &c::chams::invisible::enable);
                 ImGui::SameLine();
-                ImGui::ColorEdit4(("##invisible clr"), c::chams::invisible_chams_clr, w_alpha);
-                ImGui::Checkbox(("invisible wireframe"), &c::chams::invisible_wireframe);
-                ImGui::Text(("material"));
-                ImGui::Combo(("##vismat"), &c::chams::cham_type, materials, IM_ARRAYSIZE(materials));
-                ImGui::Checkbox(("overlay chams"), &c::chams::visible_chams_ov);
+                ImGui::ColorEdit4("##invisible model color", c::chams::invisible::color, w_alpha);
+                if (c::chams::invisible::enable)
+                {
+                    ImGui::Checkbox("hide original model##invisiblemodel", &c::chams::invisible::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstyleinvisiblemodel", &c::chams::invisible::type, materials, IM_ARRAYSIZE(materials));
+                }
+                ImGui::Checkbox("visible attachment model", &c::chams::visible_attachment::enable);
                 ImGui::SameLine();
-                ImGui::ColorEdit4(("##ovcolor0"), c::chams::visible_chams_clr_ov, w_alpha);
-                if (c::chams::visible_chams_ov) {
-                    ImGui::Checkbox(("overlay wireframe"), &c::chams::visible_wireframe_ov);
-                    ImGui::Text(("material"));
-                    ImGui::Combo(("##overlay"), &c::chams::cham_type_overlay, chams_overlay_types, IM_ARRAYSIZE(chams_overlay_types));
+                ImGui::ColorEdit4("##visible attachment model color", c::chams::visible_attachment::color, w_alpha);
+                if (c::chams::visible_attachment::enable)
+                {
+                    ImGui::Checkbox("hide original model##visibleattachmentmodel", &c::chams::visible_attachment::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstylevisibleattachmentmodel", &c::chams::visible_attachment::type, materials, IM_ARRAYSIZE(materials));
+                }
+                ImGui::Checkbox("invisible attachment model", &c::chams::invisible_attachment::enable);
+                ImGui::SameLine();
+                ImGui::ColorEdit4("##invisible attachment model color", c::chams::invisible_attachment::color, w_alpha);
+                if (c::chams::invisible_attachment::enable)
+                {
+                    ImGui::Checkbox("hide original model##invisibleattachmentmodel", &c::chams::invisible_attachment::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstyleinvisibleattachmentmodel", &c::chams::invisible_attachment::type, materials, IM_ARRAYSIZE(materials));
+                }
+                ImGui::Checkbox("backtrack model", &c::chams::backtrack::enable);
+                ImGui::SameLine();
+                ImGui::ColorEdit4("##backtrack model color 1", c::chams::backtrack::color_1, w_alpha);
+                if (c::chams::backtrack::enable)
+                {
+                    ImGui::Checkbox("draw all ticks", &c::chams::backtrack::draw_all_ticks);
+                    if (c::chams::backtrack::draw_all_ticks)
+                    {
+                        ImGui::Checkbox("gradient fade", &c::chams::backtrack::gradient);
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##backtrack model color 2", c::chams::backtrack::color_2, w_alpha);
+                    }
+                    ImGui::Checkbox("draw when invisible", &c::chams::backtrack::invisible);
+                    ImGui::Checkbox("hide original model##backtrack", &c::chams::backtrack::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstylebacktrackmodel", &c::chams::backtrack::type, materials, IM_ARRAYSIZE(materials));
                 }
 
                 ImGui::PopStyleVar();
             }},
 
-                ctab{ "backtrack", []()
+                ctab{ "local", []()
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0));
-                ImGui::Checkbox(("enable backtrack chams##bt"), &c::chams::backtrack_chams);
+
+                ImGui::Checkbox("weapon", &c::chams::weapon::enable);
                 ImGui::SameLine();
-                ImGui::ColorEdit4(("##playerbt1"), c::chams::backtrack_chams_clr2, w_alpha);
-                ImGui::Checkbox(("enable invisible chams##bt"), &c::chams::backtrack_chams_invisible);
-                ImGui::Checkbox(("draw all ticks##bt"), &c::chams::backtrack_chams_draw_all_ticks);
-                if (c::chams::backtrack_chams_draw_all_ticks) {
-                    ImGui::Checkbox(("gradient##bt"), &c::chams::backtrack_chams_gradient);
-                    ImGui::SameLine();
-                    ImGui::ColorEdit4(("##playerbt2"), c::chams::backtrack_chams_clr1, w_alpha);
+                ImGui::ColorEdit4("##weapon model color##weapon", c::chams::weapon::color, w_alpha);
+                if (c::chams::weapon::enable)
+                {
+                    ImGui::Checkbox("hide original model", &c::chams::weapon::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstylesweaponmodel", &c::chams::weapon::type, materials, IM_ARRAYSIZE(materials));
                 }
-                ImGui::Text(("material"));
-                ImGui::Combo(("##backtrack"), &c::chams::cham_type_bt, materials, IM_ARRAYSIZE(materials));
+                ImGui::Checkbox("hands", &c::chams::hands::enable);
+                ImGui::SameLine();
+                ImGui::ColorEdit4("##hands model color", c::chams::hands::color, w_alpha);
+                if (c::chams::hands::enable)
+                {
+                    ImGui::Checkbox("hide original model##weapon", &c::chams::hands::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstylehandsmodel", &c::chams::hands::type, materials, IM_ARRAYSIZE(materials));
+                }
+                ImGui::Checkbox("sleeves", &c::chams::sleeves::enable);
+                ImGui::SameLine();
+                ImGui::ColorEdit4("##sleeves model color", c::chams::sleeves::color, w_alpha);
+                if (c::chams::sleeves::enable)
+                {
+                    ImGui::Checkbox("hide original model##sleeves", &c::chams::sleeves::hide_original_model);
+                    ImGui::Text("base layer");
+                    ImGui::Combo("##chamsstylesleevesmodel", &c::chams::sleeves::type, materials, IM_ARRAYSIZE(materials));
+                }
+                ImGui::PopStyleVar();
+            }},
+
+                ctab{ "team", []()
+            {
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 0));
 
                 ImGui::PopStyleVar();
             }}
             };
 
-            menu::render_tab(("cham_tabs"), cham_tabs, 2U, &menu::chams_tab, style.Colors[ImGuiCol_TabHovered]);
+            menu::render_tab("chams_tabs", cham_tabs, 3U, &menu::chams_tab, style.Colors[ImGuiCol_TabHovered]);
 
             ImGui::EndChild();
         }
@@ -621,7 +678,7 @@ void visuals() {
                     if (c::misc::debug_information::can_fire::enable)
                     {
                         ImGui::Text("style");
-                        ImGui::Combo("##wrtfs", &c::misc::debug_information::can_fire::style, "can shoot\0aim\0");
+                        ImGui::Combo("##wrtfs", &c::misc::debug_information::can_fire::style, "can shoot\0aim");
                         ImGui::Text("ready to shoot");
                         ImGui::SameLine();
                         ImGui::ColorEdit4("##active color", c::misc::debug_information::can_fire::active_color, no_alpha);
@@ -879,8 +936,6 @@ void visuals() {
                 }
                 ImGui::Checkbox("remove panorama blur", &c::visuals::panorama_blur::enable);
                 ImGui::Checkbox("remove post processing", &c::visuals::post_processing::enable);
-                ImGui::Checkbox("remove player model", &c::visuals::player_model::enable);
-                ImGui::Checkbox("remove player sleeves", &c::visuals::player_sleeves::enable);
 
                 ImGui::Spacing();
 
@@ -1290,10 +1345,6 @@ void miscellaneous() {
             }
             ImGui::Checkbox("hit marker", &c::misc::misc_hitmarker);
             ImGui::Checkbox("hit sound", &c::misc::misc_hitmarker_sound);
-            if (c::misc::misc_hitmarker_sound)
-			{
-                ImGui::Combo("##sound_type", &c::misc::misc_hitmarker_sound_type, "arena_switch_press_02\0button22\0money_collect_01\0beep07");
-            }
 			
             static const char* hitinfo[3] = { "chat", "screen", "console" };
 
@@ -1525,7 +1576,37 @@ void font() {
                     ImGui::Text("font flags");
                     ImGui::MultiCombo("##sub_scene_font_flags", font_flags, c::fonts::scene_sub_flag, 11);
             }
+            else if (menu::font_tab == 6) {
+                ImGui::ListBoxHeader("##font_list_debug_information", ImVec2(-1, 190)); {
+                    for (int i = 0; i < menu::fonts.size(); i++) {
 
+                        std::string fonts = menu::fonts[i];
+
+                        if (filter.PassFilter(fonts.c_str())) {
+                            if (ImGui::Selectable(menu::fonts[i].c_str(), i == fonts::selected_font_index_debug_information)) {
+                                fonts::selected_font_index_debug_information = i;
+                            }
+                        }
+                    }
+                    ImGui::ListBoxFooter();
+                }
+
+                if (fonts::selected_font_index_debug_information >= 0) {
+                    if (menu::fonts[fonts::selected_font_index_debug_information] == "default") {
+                        fonts::font_directory_debug_information = "C:/windows/fonts/tahomabd.ttf";
+                    }
+                    else {
+                        fonts::font_directory_debug_information = "C:/windows/fonts/" + menu::fonts[fonts::selected_font_index_debug_information];
+                    }
+                    c::fonts::scene_sub_font = fonts::selected_font_index_debug_information;
+                }
+
+                ImGui::Text("search font");
+                filter.Draw("##filter_skin");
+                ImGui::SliderInt("font size##sub_scene", &c::fonts::debug_information_size, 1, 50);
+                ImGui::Text("font flags");
+                ImGui::MultiCombo("##sub_scene_font_flags", font_flags, c::fonts::debug_information_flag, 11);
+            }
             if (ImGui::Button("reset fonts"))
             {
                 fonts::reset_fonts();

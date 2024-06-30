@@ -326,17 +326,20 @@ void features::misc::clantag_spammer()
 	static std::string rotating = c::misc::misc_clantag_text;
 	float latency = interfaces::engine->get_net_channel_info()->get_latency(FLOW_INCOMING) + interfaces::engine->get_net_channel_info()->get_latency(FLOW_OUTGOING);
 
+	static std::string n_symbol = "\n ";
+	static std::string velocty = std::to_string((int)g::local->velocity().length_2d());
+
 	if (c::misc::misc_clantag_type == 0)
 	{
 		apply_clan_tag(" ", "bhop cheat");
 	}
 	else if (c::misc::misc_clantag_type == 1)
 	{
-		apply_clan_tag("\n ", "bhop cheat");
+		apply_clan_tag(n_symbol.c_str(), "bhop cheat");
 	}
 	else if (c::misc::misc_clantag_type == 2)
 	{
-		apply_clan_tag(std::to_string(g::local->velocity().length_2d()).c_str(), "bhop cheat");
+		apply_clan_tag(velocty.c_str(), "bhop cheat");
 	}
 	else if (c::misc::misc_clantag_type == 3)
 	{
@@ -437,13 +440,7 @@ void features::misc::hitmarker::event(i_game_event* event)
 
 				if (c::misc::misc_hitmarker_sound)
 				{
-					switch (c::misc::misc_hitmarker_sound_type)
-					{
-					case 0: interfaces::surface->play_sound("buttons\\arena_switch_press_02.wav"); break;
-					case 1: interfaces::surface->play_sound("buttons\\button22.wav"); break;
-					case 2: interfaces::surface->play_sound("survival\\money_collect_01.wav"); break;
-					case 3: interfaces::surface->play_sound("Ui\\beep07.wav"); break;
-					}
+					interfaces::surface->play_sound("buttons\\arena_switch_press_02.wav"); 
 				}				
 			}
 		break;

@@ -1034,6 +1034,50 @@ color_t interpolate(const color_t& first_color, const color_t& second_color, con
 	);
 }
 
+color_t hsb(float hue, float saturation, float brightness, float alpha) {
+	const float h = std::fmodf(hue, 1.0f) * 6.0f;
+	const int i = static_cast<int>(h);
+	const float f = h - static_cast<float>(i);
+	const float p = brightness * (1.0f - saturation);
+	const float q = brightness * (1.0f - saturation * f);
+	const float t = brightness * (1.0f - saturation * (1.0f - f));
+
+	float r = 0.0f, g = 0.0f, b = 0.0f;
+
+	switch (i) {
+	case 0:
+		r = brightness, g = t, b = p;
+		break;
+	case 1:
+		r = q, g = brightness, b = p;
+		break;
+	case 2:
+		r = p, g = brightness, b = t;
+		break;
+	case 3:
+		r = p, g = q, b = brightness;
+		break;
+	case 4:
+		r = t, g = p, b = brightness;
+		break;
+	case 5:
+	default:
+		r = brightness, g = p, b = q;
+		break;
+	}
+
+	return color_t(r, g, b, alpha);
+}
+
+color_t interpolate_hsb(float first_hue, float first_saturation, float first_brightness, float first_alpha, float second_hue, float second_saturation, float second_brightness, float second_alpha, float time) {
+	float hue = first_hue + time * (second_hue - first_hue);
+	float saturation = first_saturation + time * (second_saturation - first_saturation);
+	float brightness = first_brightness + time * (second_brightness - first_brightness);
+	float alpha = first_alpha + time * (second_alpha - first_alpha);
+
+	return hsb(hue, saturation, brightness, alpha);
+}
+
 void features::movement::velocity_indicator( )
 {
 	if (!c::movement::indicators::velocity::enable)
@@ -1079,8 +1123,8 @@ void features::movement::velocity_indicator( )
 		}
 	};
 
-	static float velocity_alpha = 0.0f;
-	velocity_alpha = 1.f * (float(current_speed) / 255.f);
+	float max_velocity = 300.0f;
+	float interpolation_factor = std::clamp(float(current_speed) / max_velocity, 0.0f, 1.0f);
 
 	color_t color_1 = color_t(c::movement::indicators::velocity::color_1[0], c::movement::indicators::velocity::color_1[1], c::movement::indicators::velocity::color_1[2], c::movement::indicators::velocity::color_1[3]);
 	color_t color_2 = color_t(c::movement::indicators::velocity::color_2[0], c::movement::indicators::velocity::color_2[1], c::movement::indicators::velocity::color_2[2], c::movement::indicators::velocity::color_2[3]);
@@ -1100,7 +1144,7 @@ void features::movement::velocity_indicator( )
 		place_holder_velocity += " (" + std::to_string(last_jump_speed) + ")";
 	}
 
-	im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position, c::fonts::indi_size, fonts::indicator_font, place_holder_velocity.c_str(), true, c::movement::indicators::velocity::custom_color ? interpolate(color_1, color_2, velocity_alpha) : velocity_color(last_delta), c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+	im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position, c::fonts::indi_size, fonts::indicator_font, place_holder_velocity.c_str(), true, c::movement::indicators::velocity::custom_color ? interpolate(color_1, color_2, interpolation_factor) : velocity_color(last_delta), c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 
 	if (std::fabs(interfaces::globals->tick_count - last_update) > 5)
 	{
@@ -1276,43 +1320,21 @@ void features::movement::keys_indicator()
 	}
 }
 
-void features::movement::add(std::string name, bool enabled, color_t clr)
+void features::movement::add(std::string name, bool enabled, color_t color)
 {
-	if (!m_indicators.count(name))
-	{
-		m_indicators.insert({ name,  { color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]), 0}});
-	}
+	auto& indicator = indicators_data[name];
 
-	m_indicators[name].clr[0] = clr.r();
-	m_indicators[name].clr[1] = clr.g();
-	m_indicators[name].clr[2] = clr.b();
+	if (!indicators_data.count(name))
+		indicator = { color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2], 0.0f) };
+
+	indicator[0] = color.r();
+	indicator[1] = color.g();
+	indicator[2] = color.b();
 
 	if (enabled)
-	{
-		if (m_indicators[name].alpha < 1.f)
-		{
-			m_indicators[name].alpha += interfaces::globals->frame_time * c::movement::indicators::binds::speed;
-		}
-
-		if (m_indicators[name].alpha > 1.f)
-		{
-			m_indicators[name].alpha = 1.f;
-		}
-	}
+		indicator.setAlpha(std::min(indicator[3] + interfaces::globals->frame_time * c::movement::indicators::binds::speed, 1.f));
 	else
-	{
-		if (m_indicators[name].alpha > 0.f)
-		{
-			m_indicators[name].alpha -= interfaces::globals->frame_time * c::movement::indicators::binds::speed;
-		}
-
-		if (m_indicators[name].alpha < 0.f)
-		{
-			m_indicators[name].alpha = 0.f;
-		}
-	}
-
-	m_indicators[name].clr.setAlpha(m_indicators[name].alpha);
+		indicator.setAlpha(std::max(indicator[3] - interfaces::globals->frame_time * c::movement::indicators::binds::speed, 0.f));
 }
 
 void features::movement::indicators() 
@@ -1413,37 +1435,37 @@ void features::movement::indicators()
 	/* ej 2  */
 	if (c::movement::indicators::binds::list[1])
 	{
-		add("ej", c::movement::edge_jump && menu::checkkey(c::movement::edge_jump_key, c::movement::edge_jump_key_s), interfaces::globals->tick_count - saved_tick[1] < 25 ? color_t(c::movement::indicators::binds::color_1[0], c::movement::indicators::binds::color_1[1], c::movement::indicators::binds::color_1[2], 1.0f) : color_t(255, 255, 255));
+		add("ej", c::movement::edge_jump && menu::checkkey(c::movement::edge_jump_key, c::movement::edge_jump_key_s), interfaces::globals->tick_count - saved_tick[1] < 25 ? color_t(c::movement::indicators::binds::color_1[0], c::movement::indicators::binds::color_1[1], c::movement::indicators::binds::color_1[2], 1.0f) : color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* lj 3  */
 	if (c::movement::indicators::binds::list[2])
 	{
-		add("lj", c::movement::long_jump && menu::checkkey(c::movement::long_jump_key, c::movement::long_jump_key_s), interfaces::globals->tick_count - saved_tick[2] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2], 1.0f) : color_t(255, 255, 255));
+		add("lj", c::movement::long_jump && menu::checkkey(c::movement::long_jump_key, c::movement::long_jump_key_s), interfaces::globals->tick_count - saved_tick[2] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2], 1.0f) : color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* eb 4  */
 	if (c::movement::indicators::binds::list[3])
 	{
-		add("eb", c::movement::edge_bug && menu::checkkey(c::movement::edge_bug_key, c::movement::edge_bug_key_s), interfaces::globals->tick_count - saved_tick[3] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
+		add("eb", c::movement::edge_bug && menu::checkkey(c::movement::edge_bug_key, c::movement::edge_bug_key_s), interfaces::globals->tick_count - saved_tick[3] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* mj 5 */
 	if (c::movement::indicators::binds::list[4])
 	{
-		add("mj", c::movement::mini_jump && menu::checkkey(c::movement::mini_jump_key, c::movement::mini_jump_key_s), interfaces::globals->tick_count - saved_tick[4] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2], 1.0f) : color_t(255, 255, 255));
+		add("mj", c::movement::mini_jump && menu::checkkey(c::movement::mini_jump_key, c::movement::mini_jump_key_s), interfaces::globals->tick_count - saved_tick[4] < 25 ? color_t(c::movement::indicators::binds::color_2[0], c::movement::indicators::binds::color_2[1], c::movement::indicators::binds::color_2[2], 1.0f) : color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* sh 6 */
 	if (c::movement::indicators::binds::list[5])
 	{
-		add("sh", c::movement::delay_hop && menu::checkkey(c::movement::delay_hop_key, c::movement::delay_hop_key_s), interfaces::globals->tick_count - saved_tick[5] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
+		add("sh", c::movement::delay_hop && menu::checkkey(c::movement::delay_hop_key, c::movement::delay_hop_key_s), interfaces::globals->tick_count - saved_tick[5] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* ps 7 */
 	if (c::movement::indicators::binds::list[6])
 	{
-		add("ps", c::movement::pixel_surf && menu::checkkey(c::movement::pixel_surf_key, c::movement::pixel_surf_key_s), interfaces::globals->tick_count - saved_tick[6] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
+		add("ps", c::movement::pixel_surf && menu::checkkey(c::movement::pixel_surf_key, c::movement::pixel_surf_key_s), interfaces::globals->tick_count - saved_tick[6] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* al 8 */
 	if (c::movement::indicators::binds::list[7])
 	{
-		add("al", c::movement::auto_align, interfaces::globals->tick_count - saved_tick[7] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(255, 255, 255));
+		add("al", c::movement::auto_align, interfaces::globals->tick_count - saved_tick[7] < 25 ? color_t(c::movement::indicators::binds::color_4[0], c::movement::indicators::binds::color_4[1], c::movement::indicators::binds::color_4[2], 1.0f) : color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* ad 9 */
 	if (c::movement::indicators::binds::list[8])
@@ -1453,49 +1475,49 @@ void features::movement::indicators()
 	/* as 10 */
 	if (c::movement::indicators::binds::list[9])
 	{
-		add("as", c::movement::auto_strafe && menu::checkkey(c::movement::auto_strafe_key, c::movement::auto_strafe_key_s), color_t(255, 255, 255));
+		add("as", c::movement::auto_strafe && menu::checkkey(c::movement::auto_strafe_key, c::movement::auto_strafe_key_s), color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* bb 11 */
 	if (c::movement::indicators::binds::list[10])
 	{
-		add("bb", c::movement::block_bot && menu::checkkey(c::movement::block_bot_key, c::movement::block_bot_key_s), color_t(255, 255, 255));
+		add("bb", c::movement::block_bot && menu::checkkey(c::movement::block_bot_key, c::movement::block_bot_key_s), color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* msl 12 */
 	if (c::movement::indicators::binds::list[11])
 	{
-		add("msl", c::movement::mouse_strafe_limiter && menu::checkkey(c::movement::mouse_strafe_limiter_key, c::movement::mouse_strafe_limiter_key_s), color_t(255, 255, 255));
+		add("msl", c::movement::mouse_strafe_limiter && menu::checkkey(c::movement::mouse_strafe_limiter_key, c::movement::mouse_strafe_limiter_key_s), color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* so 13 */
 	if (c::movement::indicators::binds::list[12])
 	{
-		add("so", c::movement::strafe_optimizer && menu::checkkey(c::movement::strafe_optimizer_key, c::movement::strafe_optimizer_key_s), color_t(255, 255, 255));
+		add("so", c::movement::strafe_optimizer && menu::checkkey(c::movement::strafe_optimizer_key, c::movement::strafe_optimizer_key_s), color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 	/* null 14 */
 	if (c::movement::indicators::binds::list[13])
 	{
-		add("null", c::movement::null_strafing, color_t(255, 255, 255));
+		add("null", c::movement::null_strafing, color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 
 	int position = 0;
 
-	for (const auto& [name, data] : m_indicators)
+	for (const auto& [name, data] : indicators_data)
 	{
-		if (data.alpha > 0.f)
+		if (data[3] > 0.f)
 		{
 			if (c::movement::indicators::velocity::enable || c::movement::indicators::stamina::enable)
 			{
 				if (c::movement::indicators::velocity::enable && c::movement::indicators::stamina::enable)
 				{
-					im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + (c::fonts::indi_size * 2) + position, c::fonts::indi_size, fonts::indicator_font, name, true, data.clr, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+					im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + (c::fonts::indi_size * 2) + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 				}
 				else
 				{
-					im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + c::fonts::indi_size + position, c::fonts::indi_size, fonts::indicator_font, name, true, data.clr, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+					im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + c::fonts::indi_size + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 				}
 			}
 			else
 			{
-				im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + position, c::fonts::indi_size, fonts::indicator_font, name, true, data.clr, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+				im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 			}
 
 			position += c::fonts::indi_size + c::movement::indicators::binds::sameline;
