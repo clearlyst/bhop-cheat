@@ -9,7 +9,6 @@ void __fastcall sdk::hooks::override_view::override_view( void* _this, void* _ed
 	features::misc::viewmodel();
 	features::misc::swayscale();
 	features::visuals::thirdperson();
-	features::visuals::freecam(setup);
 	features::visuals::motion_blur(setup);
 	features::visuals::weather::precipitation_update();
 

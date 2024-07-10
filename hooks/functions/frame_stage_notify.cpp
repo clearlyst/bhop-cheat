@@ -33,7 +33,7 @@ void __stdcall sdk::hooks::frame_stage_notify::frame_stage_notify( int stage ) {
 
 	}
 	else if (stage == frame_net_update_end) {
-		features::visuals::get_update_sounds();
+
 	}
 	else if (stage == frame_start)
 	{

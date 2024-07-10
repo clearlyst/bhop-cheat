@@ -14,7 +14,6 @@ i_material* material_glow;
 i_material* material_crystal;
 i_material* material_space;
 i_material* material_glass;
-i_material* material_oldshader;
 
 i_material* create_material(std::string name, std::string type, std::string material) {
 	auto kv = static_cast<c_key_values*>(malloc(36));
@@ -190,32 +189,6 @@ void features::chams::initialize() {
 		        }
 		    }
         })#");
-
-	material_oldshader = create_material("shaders", "VertexLitGeneric", R"#("Character"
-    {
-		"$basetexture"            "models/weapons/v_models/arms/glove_hardknuckle/v_glove_hardknuckle"
-		"$bumpmap"                "models/weapons/v_models/arms/bare/bare_arm_133_normal"
-		"$masks1"                 "models/weapons/v_models/arms/bare/bare_arm_masks1"
-		"$phongwarptexture"       "models/weapons/customization/materials/material_specwarp"
-		"$fresnelrangestexture"   "models/weapons/v_models/arms/bare/bare_arm_fresnelrange"
-		"$basealphaenvmask"       "1"
-		"$rimlightboost"          "1"
-		"$rimlightexponent"       "8"
-		"$ambientreflectionboost" "1.0"
-		"$shadowsaturation"       "0.015"
-		"$shadowsaturationbounds" "[0.25 0.5 0.5 0.7]"
-		"$phongboost"             "1"
-		"$envmap"                 "env_cubemap"
-		"$envmaplightscale"      "0.5"
-		"$shadowrimboost"			"1"
-		
-		"GPU<2"
-		{
-			"$phong" "0"
-			"$envmap" ""
-			"$envmaptint" "[0 0 0]"
-		}
-    })#");
 }
 
 void features::chams::run(i_mat_render_context* ctx, const draw_model_state_t& state, const model_render_info_t& info, matrix_t* matrix)
@@ -229,10 +202,6 @@ void features::chams::run(i_mat_render_context* ctx, const draw_model_state_t& s
 	bool is_hand = strstr(info.model->name, "arms") != nullptr;
 	bool is_sleeve = strstr(info.model->name, "sleeve") != nullptr;
 	bool is_weapon = strstr(info.model->name, "weapons/v_") != nullptr;
-	bool is_glove = strstr(info.model->name, "models/weapons/v_models/arms/bare/v_bare_hands.mdl")
-		&& strstr(info.model->name, "models/weapons/v_models/arms/glove_fingerless/v_glove_fingerless.mdl")
-		&& strstr(info.model->name, "models/weapons/v_models/arms/glove_fullfinger/v_glove_fullfinger.mdl")
-		&& strstr(info.model->name, "models/weapons/v_models/arms/glove_hardknuckle/v_glove_hardknuckle.mdl") != nullptr;
 	bool is_weapon_on_back = strstr(info.model->name, "_dropped.mdl") && strstr(info.model->name, "models/weapons/w") && !strstr(info.model->name, "arms") && !strstr(info.model->name, "ied_dropped");
 	bool is_weapon_enemy_hands = strstr(info.model->name, "models/weapons/w") && !strstr(info.model->name, "arms") && !strstr(info.model->name, "ied_dropped");
 	bool is_defuse_kit = strstr(info.model->name, "defuser") && !strstr(info.model->name, "arms") && !strstr(info.model->name, "ied_dropped");
@@ -519,6 +488,48 @@ void features::chams::run_bt(i_mat_render_context* ctx, const draw_model_state_t
 					interfaces::model_render->override_material(nullptr);
 				}
 			}
+		}
+	}
+}
+
+void features::chams::old_shaders()
+{
+	if (!c::chams::hands::old_shaders)
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_connected() || !interfaces::engine->is_in_game())
+	{
+		return;
+	}
+
+	for (material_handle_t i = interfaces::material_system->first_material(); i != interfaces::material_system->invalid_material_handle(); i = interfaces::material_system->next_material(i))
+	{
+		i_material* material = interfaces::material_system->get_material(i);
+
+		if (!material)
+			continue;
+
+		const char* group = material->get_texture_group_name();
+
+		if (strstr(group, TEXTURE_GROUP_MODEL))
+		{
+			bool found = false;
+
+			auto rimlight = material->find_var("$rimlight", &found);
+			auto phong = material->find_var("$phong", &found);
+
+			if (found)
+			{
+				rimlight->set_int_value(0);
+				phong->set_int_value(0);
+			}
+
+			material->set_material_var_flag(material_var_basealphaenvmapmask, 0);
+			material->set_material_var_flag(material_var_normalmapalphaenvmapmask, 0);
+			material->set_material_var_flag(material_var_envmapmode, 0);
+			material->set_material_var_flag(material_var_halflambert, 1);
 		}
 	}
 }

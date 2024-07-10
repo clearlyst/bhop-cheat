@@ -34,7 +34,7 @@ bool interfaces::initialize() {
 	globals = **reinterpret_cast<c_global_vars_base***>((*reinterpret_cast<uintptr_t**>(client))[11] + 10);
 	device = **reinterpret_cast<IDirect3DDevice9***>(find_pattern(("shaderapidx9.dll"), ("A1 ? ? ? ? 50 8B 08 FF 51 0C")) + 1);
 	move_helper = **reinterpret_cast<IMoveHelper***>(find_pattern("client.dll", "8B 0D ? ? ? ? 8B 45 ? 51 8B D4 89 02 8B 01") + 2);
-	render_beams = **reinterpret_cast<IViewRenderBeams***>(find_pattern("client.dll", "A1 ? ? ? ? FF 10 A1 ? ? ? ? B9") + 1);
+	render_beams = **reinterpret_cast<IViewRenderBeams***>(find_pattern("client.dll", "B9 ? ? ? ? A1 ? ? ? ? FF 10 A1 ? ? ? ? B9") + 1);
 	weapon_system = *reinterpret_cast<i_weapon_system**>(find_pattern("client.dll", "8B 35 ? ? ? ? FF 10 0F B7 C0") + 2);
 	glow_manager = reinterpret_cast<glow_manager_t*>(*reinterpret_cast<uintptr_t*>(find_pattern("client.dll", "0F 11 05 ? ? ? ? 83 C8 01 C7 05 ? ? ? ? 00 00 00 00") + 3));
 	chat_element = *reinterpret_cast<c_hud_chat**>(reinterpret_cast<uintptr_t>(client_mode) + *reinterpret_cast<uint8_t*>(find_pattern(("client.dll"), ("E8 ? ? ? ? 8B 4F ? 85 C9 74 06 51")) + 7));

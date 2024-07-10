@@ -37,6 +37,12 @@ void __fastcall sdk::hooks::push_notice::push_notice(int ecx, int edx, const cha
 	case FNV1A::HashConst("#_print_loaded"):
 		return print_text(ecx, edx, xs("loaded config"));
 		break;
+	case FNV1A::HashConst("#_print_removed"):
+		return print_text(ecx, edx, xs("removed config"));
+		break;
+	case FNV1A::HashConst("#_print_canceled_remove"):
+		return print_text(ecx, edx, xs("canceled remove config"));
+		break;
 	case FNV1A::HashConst("#_print_refreshed"):
 		return print_text(ecx, edx, xs("refreshed config list"));
 		break;

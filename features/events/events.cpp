@@ -38,7 +38,7 @@ void hooked_events::fire_game_event(i_game_event* event)
 		{
 			if (c::misc::misc_hitchams)
 			{
-				const auto entity = reinterpret_cast<entity_t*>(interfaces::ent_list->get_client_entity(user_id));
+				const auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(user_id));
 
 				if (!entity)
 					return;
@@ -46,16 +46,18 @@ void hooked_events::fire_game_event(i_game_event* event)
 				if (!entity->index())
 					return;
 
-				matrix_t matrix[128];
+				matrix_t matrix[MAXSTUDIOBONES];
 
-				if (!entity->setup_bones(matrix, 128, BONE_USED_BY_HITBOX, interfaces::globals->cur_time))
+				if (!entity->setup_bones(matrix, MAXSTUDIOBONES, BONE_USED_BY_HITBOX, interfaces::globals->cur_time))
 					return;
 
 				studio_hdr_t* studio_model = interfaces::model_info->get_studio_model(entity->model());
+
 				if (!studio_model)
 					return;
 
-				studio_hitbox_set_t* set = studio_model->hitbox_set(entity->hitbox_set());
+				const auto set = studio_model->hitbox_set(entity->hitbox_set());
+
 				if (!set)
 					return;
 

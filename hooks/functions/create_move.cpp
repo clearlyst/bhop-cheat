@@ -32,6 +32,8 @@ bool __stdcall sdk::hooks::create_move::create_move(float sampletime, c_usercmd*
 		cmd->buttons |= in_bullrush;
 	}
 
+	features::movement::auto_fireman(cmd);
+	features::movement::ladder_jump(cmd);
 	features::movement::bhop(cmd);
 	features::movement::delay_hop(cmd);
 
@@ -49,10 +51,9 @@ bool __stdcall sdk::hooks::create_move::create_move(float sampletime, c_usercmd*
 	features::movement::edge_bug(cmd);
 	features::movement::long_jump(cmd);
 	features::movement::mini_jump(cmd);
-	features::movement::ladder_jump(cmd);
 	features::movement::auto_strafe(cmd, cmd->view_angles);
 	features::movement::strafe_optimizer(cmd);
-	features::visuals::run_freecam(cmd, cmd->view_angles);
+	features::visuals::free_view(cmd, cmd->view_angles);
 
 	if (net_channel != nullptr) 
 	{

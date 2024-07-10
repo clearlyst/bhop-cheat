@@ -4984,6 +4984,9 @@ ImVec2 ImGui::GetItemRectSize()
     return g.LastItemData.Rect.GetSize();
 }
 
+#include <string>
+#include "../../menu/menu.hpp";
+
 bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, bool border, ImGuiWindowFlags flags)
 {
     ImGuiContext& g = *GImGui;
@@ -5031,10 +5034,13 @@ bool ImGui::BeginChildEx(const char* name, ImGuiID id, const ImVec2& size_arg, b
         SetActiveID(id + 1, child_window); // Steal ActiveId with another arbitrary id so that key-press won't activate child item
         g.ActiveIdSource = ImGuiInputSource_Nav;
     }
+    /*
+    parent_window->DrawList->AddRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + size_arg, GetColorU32(ImGuiCol_DisableElement));
+    parent_window->DrawList->AddText(fonts::menu_font_bold, fonts::menu_font_bold->FontSize, ImVec2(ImGui::GetWindowPos().x + 13, ImGui::GetWindowPos().y - (ImGui::CalcTextSize(name).y / 2) - 1), ImColor(0, 0, 0, 255), name);
+    parent_window->DrawList->AddText(fonts::menu_font_bold, fonts::menu_font_bold->FontSize, ImVec2(ImGui::GetWindowPos().x + 12, ImGui::GetWindowPos().y - (ImGui::CalcTextSize(name).y / 2) - 2), ImColor(255, 255, 255, 255), name);
+    */
     return ret;
 }
-#include <string>
-#include "../../menu/menu.hpp";
 
 bool ImGui::beginchildex(const char* name, ImGuiID id, const ImVec2& size_arg, bool border, ImGuiWindowFlags flags)
 {
@@ -5095,6 +5101,7 @@ bool ImGui::beginchildex(const char* name, ImGuiID id, const ImVec2& size_arg, b
         SetActiveID(id + 1, child_window); // Steal ActiveId with another arbitrary id so that key-press won't activate child item
         g.ActiveIdSource = ImGuiInputSource_Nav;
     }
+
     return ret;
 }
 bool ImGui::BeginChild(const char* str_id, const ImVec2& size_arg, bool border, ImGuiWindowFlags extra_flags)
@@ -8488,40 +8495,36 @@ bool ImGui::Keybind(const char* str_id, int* current_key, int* key_style) {
     if (window->SkipItems)
         return false;
 
-    float group_w = ImGui::GetCurrentWindow()->Size.x - ImGui::GetStyle().FramePadding.x * 2;
-
-    int key_width = ImGui::CalcTextSize(keys[*current_key]).x;
-    SameLine(group_w - 20);
-    ImGui::SetCursorPosX(group_w - 2 - (key_width + 1));
-
     ImGuiContext& g = *GImGui;
-
+    ImGuiIO& io = g.IO;
     const ImGuiStyle& style = g.Style;
-    const ImGuiID id = window->GetID(str_id);
-    ImGuiIO* io = &GetIO();
 
-    const ImVec2 label_size = CalcTextSize(keys[*current_key]);
-    const ImRect frame_bb(window->DC.CursorPos, window->DC.CursorPos + label_size);
-    const ImRect total_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(window->Pos.x + window->Size.x - window->DC.CursorPos.x, label_size.y));
+    const ImGuiID id = window->GetID(str_id);
+    const ImVec2 label_size = CalcTextSize(str_id, NULL, true);
+
+    ImVec2 size = CalcItemSize(ImVec2(label_size.x + 25, 25), CalcItemWidth(), label_size.y + style.FramePadding.y * 2.0f);
+    const ImRect frame_bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    const ImRect total_bb(frame_bb.Min, frame_bb.Max + ImVec2(label_size.x > 0.0f ? (style.ItemInnerSpacing.x + label_size.x) : 0.0f, 0.0f));
+
     ItemSize(total_bb, style.FramePadding.y);
-    if (!ItemAdd(total_bb, id, &frame_bb))
+    if (!ItemAdd(total_bb, id))
         return false;
 
     const bool hovered = IsItemHovered();
-    const bool edit_requested = hovered && io->MouseClicked[0];
-    const bool style_requested = hovered && io->MouseClicked[1];
+    const bool edit_requested = hovered && io.MouseClicked[0];
+    const bool style_requested = hovered && io.MouseClicked[1];
 
     if (edit_requested) {
         if (g.ActiveId != id) {
-            memset(io->MouseDown, 0, sizeof(io->MouseDown));
-            memset(io->KeysDown, 0, sizeof(io->KeysDown));
+            memset(io.MouseDown, 0, sizeof(io.MouseDown));
+            memset(io.KeysDown, 0, sizeof(io.KeysDown));
             *current_key = 0;
         }
 
         SetActiveID(id, window);
         FocusWindow(window);
     }
-    else if (!hovered && io->MouseClicked[0] && g.ActiveId == id)
+    else if (!hovered && io.MouseClicked[0] && g.ActiveId == id)
         ClearActiveID();
 
     bool value_changed = false;
@@ -8529,7 +8532,7 @@ bool ImGui::Keybind(const char* str_id, int* current_key, int* key_style) {
 
     if (g.ActiveId == id) {
         for (auto i = 0; i < 5; i++) {
-            if (io->MouseDown[i]) {
+            if (io.MouseDown[i]) {
                 switch (i) {
                 case 0:
                     key = VK_LBUTTON;
@@ -8553,7 +8556,7 @@ bool ImGui::Keybind(const char* str_id, int* current_key, int* key_style) {
 
         if (!value_changed) {
             for (auto i = VK_BACK; i <= VK_RMENU; i++) {
-                if (io->KeysDown[i]) {
+                if (io.KeysDown[i]) {
                     key = i;
                     value_changed = true;
                     ClearActiveID();
@@ -8613,15 +8616,33 @@ bool ImGui::Keybind(const char* str_id, int* current_key, int* key_style) {
         }
     }
 
-    char buf_display[64] = "[...]";
+    char buf_display[64] = "[none]";
 
     if (*current_key != 0 && g.ActiveId != id)
         strcpy_s(buf_display, keys[*current_key]);
     else if (g.ActiveId == id)
-        strcpy_s(buf_display, "[...]");
+        strcpy_s(buf_display, "[-]");
+
+    ImU32 color;
+
+    if (g.ActiveId == id) {
+        color = GetColorU32(ImGuiCol_ActiveTextElement);
+    }
+    else if (ImGui::IsItemHovered()) {
+        color = GetColorU32(ImGuiCol_HoveringElement);
+    }
+    else {
+        color = GetColorU32(ImGuiCol_DisableElement);
+    }
 
     PushFont(fonts::menu_font_thin);
-    window->DrawList->AddText(frame_bb.Min, g.ActiveId == id ? ImColor(90 / 255.f, 90 / 255.f, 90 / 255.f, g.Style.Alpha) : ImColor(90 / 255.f, 90 / 255.f, 90 / 255.f, g.Style.Alpha), buf_display);
+    PushStyleColor(ImGuiCol_Text, color);
+
+    ImVec2 text_size = CalcTextSize(buf_display);
+    ImVec2 text_pos = ImVec2(frame_bb.Max.x - text_size.x - style.FramePadding.x, frame_bb.Min.y + style.FramePadding.y);
+    RenderTextClipped(text_pos, frame_bb.Max - style.FramePadding, buf_display, NULL, &text_size);
+
+    PopStyleColor();
     PopFont();
 
     return value_changed;

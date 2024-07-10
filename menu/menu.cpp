@@ -197,7 +197,7 @@ void visuals() {
     ImVec2 vecWindowPosition = ImGui::GetWindowPos();
 
     ImGui::Columns(2, nullptr, false); {
-        ImGui::BeginChild(("visuals.esp"), ImVec2{0, 190 }, true, ImGuiWindowFlags_MenuBar); {
+        ImGui::BeginChild(("visuals.esp"), ImVec2{0, 265 }, true, ImGuiWindowFlags_MenuBar); {
             if (ImGui::BeginMenuBar()) {
                 ImGui::TextUnformatted("overlay");
                 ImGui::EndMenuBar();
@@ -412,12 +412,13 @@ void visuals() {
                         ImGui::SliderFloat("size", &c::visuals::players::out_of_view::size, 0.0f, 50.0f, ("%.2f"));
                         ImGui::SliderFloat("distance", &c::visuals::players::out_of_view::distance, 0.0f, 600.0f, ("%.2f"));
                     }
-                    ImGui::Checkbox("emitted sound", &c::visuals::players::emitted_sound::enable);
+                    ImGui::Checkbox("emitted sound (wip)", &c::visuals::players::emitted_sound::enable);
                     if (c::visuals::players::emitted_sound::enable)
                     {
                         ImGui::SameLine();
                         ImGui::ColorEdit4("##soundscolor", c::visuals::players::colors::sounds, w_alpha);
                     }
+                    ImGui::Checkbox("death information history", &c::visuals::players::death_history::enable);
                 }
 
                 ImGui::PopStyleVar();
@@ -466,7 +467,7 @@ void visuals() {
                     ImGui::SameLine();
                     ImGui::ColorEdit4("##dropped weapon ammo bar color", c::visuals::players::dropped_weapon::ammo_bar::color, w_alpha);
                 }
-                ImGui::SliderFloat("dropped weapon distance show", &c::visuals::players::dropped_weapon::distance, 0.0f, 5000.0f, ("%.1f"));
+                ImGui::SliderFloat("show distance", &c::visuals::players::dropped_weapon::distance, 0.0f, 1000.0f, ("%.1f"));
                 ImGui::Checkbox("thrown grenade name", &c::visuals::players::thrown_grenade::text::enable);
                 if (c::visuals::players::thrown_grenade::text::enable)
                 {
@@ -536,7 +537,7 @@ void visuals() {
         }
     }
     ImGui::NextColumn(); {
-        ImGui::BeginChild("visuals.chams", ImVec2{0, 190 }, true, ImGuiWindowFlags_MenuBar); {
+        ImGui::BeginChild("visuals.chams", ImVec2{0, 265 }, true, ImGuiWindowFlags_MenuBar); {
             if (ImGui::BeginMenuBar()) {
                 ImGui::TextUnformatted("chams");
                 ImGui::EndMenuBar();
@@ -636,6 +637,7 @@ void visuals() {
                     ImGui::Text("base layer");
                     ImGui::Combo("##chamsstylesleevesmodel", &c::chams::sleeves::type, materials, IM_ARRAYSIZE(materials));
                 }
+
                 ImGui::PopStyleVar();
             }},
 
@@ -763,7 +765,7 @@ void visuals() {
                     ImGui::SameLine();
                     ImGui::ColorEdit4("##grenade prediction color", c::misc::nadepred_clr, no_alpha);
                 }
-                ImGui::Checkbox("bullet tracers", &c::misc::bullet_tracers::enable);
+                ImGui::Checkbox("bullet tracers (wip)", &c::misc::bullet_tracers::enable);
                 if (c::misc::bullet_tracers::enable)
                 {
                     ImGui::SliderFloat("life time", &c::misc::bullet_tracers::time, 0.0f, 300.0f, ("%.2f"));
@@ -915,6 +917,8 @@ void visuals() {
                     ImGui::SliderFloat("falling min", &c::visuals::world::motionblur::falling_minimum, 0.0f, 50.0f, " %.2f");
                     ImGui::SliderFloat("falling max", &c::visuals::world::motionblur::falling_maximum, 0.0f, 50.0f, " %.2f");
                 }
+                ImGui::Checkbox("old shaders", &c::chams::hands::old_shaders);
+
                 ImGui::Separator();
 
                 ImGui::Checkbox("remove/reduce flash", &c::visuals::flash::enable);
@@ -955,7 +959,7 @@ void miscellaneous() {
     ImGuiStyle& style = ImGui::GetStyle();
 
     ImGui::Columns(2, nullptr, false); {
-        ImGui::BeginChild(("misc.movement"), ImVec2(0, 190), true, ImGuiWindowFlags_MenuBar); {
+        ImGui::BeginChild(("misc.movement"), ImVec2(0, 265), true, ImGuiWindowFlags_MenuBar); {
             if (ImGui::BeginMenuBar()) {
                 ImGui::TextUnformatted(("movement"));
                 ImGui::EndMenuBar();
@@ -985,6 +989,11 @@ void miscellaneous() {
             if (c::movement::mini_jump)
             {
                 ImGui::Keybind("##mini jump key", &c::movement::mini_jump_key, &c::movement::mini_jump_key_s);
+            }
+            ImGui::Checkbox("auto fireman", &c::movement::auto_fireman);
+            if (c::movement::auto_fireman)
+            {
+                ImGui::Keybind("##auto fire man key", &c::movement::auto_fireman_key, &c::movement::auto_fireman_key_s);
             }
             ImGui::Checkbox("adaptive key cancelling", &c::movement::adaptive_key_cancelling);
             if (c::movement::adaptive_key_cancelling)
@@ -1054,7 +1063,9 @@ void miscellaneous() {
 
         ImGui::BeginChild(("misc.indicators"), ImVec2{ }, true, ImGuiWindowFlags_MenuBar); {
             if (ImGui::BeginMenuBar()) {
+                ImGui::PushFont(fonts::menu_font_bold);
                 ImGui::TextUnformatted(("scene"));
+                ImGui::PopFont();
                 ImGui::EndMenuBar();
             }
 
@@ -1067,54 +1078,74 @@ void miscellaneous() {
                 ImGui::Checkbox("velocity", &c::movement::indicators::velocity::enable);
                 if (c::movement::indicators::velocity::enable)
                 {
-                    if (c::movement::indicators::velocity::custom_color)
+                    if (c::movement::indicators::velocity::style == 0)
+                    {
+                        ImGui::Text("+velocity");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##velocity color 3", c::movement::indicators::velocity::delta_color::positive, no_alpha);
+                        ImGui::Text("=velocity");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##velocity color 4", c::movement::indicators::velocity::delta_color::neutral, no_alpha);
+                        ImGui::Text("-velocity");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##velocity color 5", c::movement::indicators::velocity::delta_color::negative, no_alpha);
+                    }
+                    else if (c::movement::indicators::velocity::style == 1)
                     {
                         ImGui::Text("-velocity");
                         ImGui::SameLine();
-                        ImGui::ColorEdit4("##velocity color 1", c::movement::indicators::velocity::color_1, w_alpha);
+                        ImGui::ColorEdit4("##velocity color 1", c::movement::indicators::velocity::interpolate_color::first, w_alpha);
                         ImGui::Text("+velocity");
                         ImGui::SameLine();
-                        ImGui::ColorEdit4("##velocity color 2", c::movement::indicators::velocity::color_2, w_alpha);
+                        ImGui::ColorEdit4("##velocity color 2", c::movement::indicators::velocity::interpolate_color::second, w_alpha);
                     }
-                    else
+
+                    if (c::movement::indicators::velocity::style == 1)
                     {
-                        ImGui::Text("velocity positive");
-                        ImGui::SameLine();
-                        ImGui::ColorEdit4("##velocity color 3",  c::movement::indicators::velocity::color_3, no_alpha);
-                        ImGui::Text("velocity neutral");
-                        ImGui::SameLine();     
-                        ImGui::ColorEdit4("##velocity color 4",  c::movement::indicators::velocity::color_4, no_alpha);
-                        ImGui::Text("velocity negative");
-                        ImGui::SameLine();            
-                        ImGui::ColorEdit4("##velocity color 5",  c::movement::indicators::velocity::color_5, no_alpha);
+                        ImGui::SliderFloat("maximum value##1", &c::movement::indicators::velocity::maximum_value, 255.0f, 400.0f, ("%.2f"));
+                    }
+                    else if (c::movement::indicators::velocity::style == 2)
+                    {
+                        ImGui::SliderFloat("maximum value##2", &c::movement::indicators::velocity::maximum_value, 255.0f, 1200.0f, ("%.2f"));
+                    }
+                    if (c::movement::indicators::velocity::style == 2)
+                    {
+                        ImGui::SliderFloat("saturation##velocity", &c::movement::indicators::velocity::hsb_color::saturation, 0.0f, 1.0f, ("%.2f"));
                     }
 
                     ImGui::Checkbox("take off##velocity", &c::movement::indicators::velocity::takeoff);
                     ImGui::Checkbox("disable takeoff on ground##velocity", &c::movement::indicators::velocity::disable_takeoff_on_ground);
-                    ImGui::Checkbox("custom color##velocity", &c::movement::indicators::velocity::custom_color);
+                    ImGui::Text("change style color velocity");
+                    ImGui::Combo("##vsc", &c::movement::indicators::velocity::style, "delta modulation\0interpolate modulation\0hsb modulation\0");
                 }
                 ImGui::Checkbox("stamina", &c::movement::indicators::stamina::enable);
                 if (c::movement::indicators::stamina::enable)
                 {
-                    if (c::movement::indicators::stamina::custom_color)
+                    if (c::movement::indicators::stamina::style == 0)
+                    {
+                        ImGui::Text("stamina");
+                        ImGui::SameLine();
+                        ImGui::ColorEdit4("##stamina color", c::movement::indicators::stamina::color, no_alpha);
+                    }
+                    else if (c::movement::indicators::stamina::style == 1)
                     {
                         ImGui::Text("-stamina");
                         ImGui::SameLine();
-                        ImGui::ColorEdit4("##stamina color 1", c::movement::indicators::stamina::color_1, w_alpha);
+                        ImGui::ColorEdit4("##stamina color 1", c::movement::indicators::stamina::interpolate_color::first, w_alpha);
                         ImGui::Text("+stamina");
                         ImGui::SameLine();
-                        ImGui::ColorEdit4("##stamina color 2", c::movement::indicators::stamina::color_2, w_alpha);
+                        ImGui::ColorEdit4("##stamina color 2", c::movement::indicators::stamina::interpolate_color::second, w_alpha);
                     }
-                    else
+                    else if (c::movement::indicators::stamina::style == 2)
                     {
-                        ImGui::Text("stamina color");
-                        ImGui::SameLine();
-                        ImGui::ColorEdit4("##stamina color", c::movement::indicators::stamina::color, no_alpha);
+                        ImGui::SliderFloat("maximum stamina color##stamina", &c::movement::indicators::stamina::maximum_value, 30.0f, 80.0f, ("%.2f"));
+                        ImGui::SliderFloat("saturation##stamina", &c::movement::indicators::stamina::hsb_color::saturation, 0.0f, 1.0f, ("%.2f"));
                     }
 
                     ImGui::Checkbox("take off##stamina", &c::movement::indicators::stamina::takeoff);
                     ImGui::Checkbox("disable takeoff on ground##stamina", &c::movement::indicators::stamina::disable_takeoff_on_ground);
-                    ImGui::Checkbox("custom color##stamina", &c::movement::indicators::stamina::custom_color);
+                    ImGui::Text("change style color stamina");
+                    ImGui::Combo("##ssc", &c::movement::indicators::stamina::style, "static modulation\0interpolate modulation\0hsb modulation\0");
                 }
                 ImGui::Checkbox("key strokes", &c::movement::indicators::keys::enable);
                 if (c::movement::indicators::keys::enable)
@@ -1126,10 +1157,6 @@ void miscellaneous() {
                     ImGui::Checkbox("under lines", &c::movement::indicators::keys::under_line);
                     ImGui::Checkbox("null switch color", &c::movement::indicators::keys::nulling);
                     ImGui::SliderInt("keys position", &c::movement::indicators::keys::position, 0, 500, "%d");
-                }
-                if (c::movement::indicators::velocity::enable || c::movement::indicators::stamina::enable)
-                {
-                    ImGui::SliderInt("position", &c::movement::indicators::position, 0, 500, "%d");
                 }
 
                 ImGui::PopStyleVar();
@@ -1150,7 +1177,6 @@ void miscellaneous() {
                     ImGui::MultiCombo("##indicators", indicators, c::movement::indicators::binds::list, 14);
                     ImGui::SliderFloat("speed animation", &c::movement::indicators::binds::speed, 0.0f, 50.0f, ("%.1f"));
                     ImGui::SliderInt("same line", &c::movement::indicators::binds::sameline, 0, 10, "%d");
-                    ImGui::SliderInt("position", &c::movement::indicators::position, 0, 500, "%d");
                 }
 
                 ImGui::PopStyleVar();
@@ -1180,7 +1206,6 @@ void miscellaneous() {
                 {
                     ImGui::Checkbox("fade on graphs", &c::movement::indicators::graphs::fade);
                     ImGui::SliderFloat("size of graphs", &c::movement::indicators::graphs::size, 0.50f, 3.00f, ("%.2f"));
-                    ImGui::SliderInt("position", &c::movement::indicators::position, 0, 500, "%d");
                 }
 
                 ImGui::PopStyleVar();
@@ -1193,109 +1218,121 @@ void miscellaneous() {
         ImGui::EndChild();
     }
     ImGui::NextColumn(); {
-        ImGui::BeginChild(("misc.config"), ImVec2(0, 190), true, ImGuiWindowFlags_MenuBar); {
+        ImGui::BeginChild(("misc.config"), ImVec2(0, 265), true, ImGuiWindowFlags_MenuBar); {
             if (ImGui::BeginMenuBar()) {
                 ImGui::TextUnformatted(("configuration"));
                 ImGui::EndMenuBar();
             }
 
+            float group_w = ImGui::GetCurrentWindow()->Size.x - ImGui::GetStyle().ItemSpacing.x - ImGui::GetStyle().FramePadding.x * 2;
+
             static int config_index = -1;
-            static char buffer[260];
-
-            ImGui::Columns(2, ("#config"), false); {
-                ImGui::PushItemWidth(-1);
-               
-                const std::vector<std::string>& configs_vector = c::configs;
-                if (ImGui::ListBoxHeader(("##configs"), configs_vector.size(), 5)) {
-                    for (std::size_t i = 0u; i < configs_vector.size(); ++i) {
-                        std::string const& config_name = configs_vector[i].data();
-                        if (ImGui::Selectable(config_name.c_str(), i == config_index)) {
-                            config_index = i;
-                        }
-                    }
-                    ImGui::ListBoxFooter();
-                }
-                ImGui::PopItemWidth();
-            }
-            ImGui::NextColumn(); {
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, 0));
-                ImGui::PushItemWidth(-1);
-               /* if (ImGui::InputTextWithHint("##config.file", "create new...", buffer, sizeof(buffer), ImGuiInputTextFlags_EnterReturnsTrue)) {
-                    c::create_file(buffer);
-
-                    memset(buffer, 0, sizeof(buffer)); // clear the buffer
-                }*/
-
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("press enter to create a new config");
-                }
-
-                if (ImGui::Button("save", ImVec2(-1, 15)))
-                {
-                    ImGui::OpenPopup("config save popup");
-                }
-
-                if (ImGui::BeginPopup("config save popup"))
-                {
-                    ImGui::Text("are you sure you want to save selected config? ");
-
-                    if (ImGui::Button("yes", ImVec2(-1, 15)))
-                    {
-                        //c::save(config_index);
-                        features::notification::run("saved config", "#_print_saved", true, true, true);
-                    }
-
-                    if (ImGui::Button("no", ImVec2(-1, 15)))
-                    {
-                        features::notification::run("canceled save config", "#_print_canceled_save", true, true, true);
-                    }
-
-                    ImGui::EndPopup();
-                }
-
-                if (ImGui::Button("load", ImVec2(-1, 15)))
-                {
-                    //c::load(config_index);
-
-                    features::notification::run("loaded config", "#_print_loaded", true, true, true);
-
-                    if (interfaces::engine->is_in_game()) {
-                        features::skins::forcing_update = true;
-                    }
-
-                    menu::load_font_index();
-                    menu::fonts_initialized = true;
-                }
-                if (ImGui::Button("refresh", ImVec2(-1, 15))) {
-                    //c::update_configs();
-
-                    features::notification::run("refreshed config list", "#_print_refreshed", true, true, true);
-                }
-                if (ImGui::Button("unlock convars", ImVec2(-1, 15))) {
-                    features::misc::unlock_cvars();
-
-                    features::notification::run("unlocked convars", "#_print_unlock_convar", true, true, true);
-                }
-
-
-                ImGui::PopItemWidth();
-                ImGui::PopStyleVar();
-            }
-
-            ImGui::Columns(1);
-
-
-
+            static char buffer[10];
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, 0));
+            ImGui::PushItemWidth(-1);
+            ImGui::Text("config");
+            if (ImGui::BeginCombo((" "), config_index != -1 ? c::configs.at(config_index).c_str() : "configs"))
+            {
+                const std::vector<std::string>& configs_vector = c::configs;
+                for (std::size_t i = 0u; i < configs_vector.size(); ++i)
+                {
+                    std::string const& config_name = configs_vector[i].data();
+                    if (ImGui::Selectable(config_name.c_str(), i == config_index))
+                    {
+                        config_index = i;
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::InputTextWithHint(("##config name"), ("config name"), buffer, sizeof(buffer));
+            ImGui::PopItemWidth();
+            if (ImGui::Button("create", ImVec2(-1, 17)))
+            {
+                c::create_file(buffer);
+
+                features::notification::run("created config", "#_print_created", true, true, true);
+            }
+            if (ImGui::Button("save", ImVec2(-1, 17)))
+            {
+                ImGui::OpenPopup("config save popup");
+            }
+            if (ImGui::BeginPopup("config save popup"))
+            {
+                ImGui::Text("are you sure you want to save selected config? ");
+
+                if (ImGui::Button("yes", ImVec2(-1, 17)))
+                {
+                    c::save(config_index);
+                    features::notification::run("saved config", "#_print_saved", true, true, true);
+                }
+
+                if (ImGui::Button("no", ImVec2(-1, 17)))
+                {
+                    features::notification::run("canceled save config", "#_print_canceled_save", true, true, true);
+                }
+
+                ImGui::EndPopup();
+            }
+            if (ImGui::Button("load", ImVec2(-1, 17)))
+            {
+                c::load(config_index);
+
+                features::notification::run("loaded config", "#_print_loaded", true, true, true);
+
+                if (interfaces::engine->is_in_game()) {
+                    features::skins::forcing_update = true;
+                }
+
+                menu::load_font_index();
+                menu::fonts_initialized = true;
+            }
+            if (ImGui::Button("delete", ImVec2(-1, 17)))
+            {
+                if (config_index >= 2)
+                {
+                    ImGui::OpenPopup("config remove popup");
+                }
+            }
+            if (ImGui::BeginPopup("config remove popup"))
+            {
+                ImGui::Text("are you sure you want to remove selected config? ");
+
+                if (ImGui::Button("yes", ImVec2(-1, 17)))
+                {
+                    c::delete_file(config_index);
+                    features::notification::run("removed config", "#_print_removed", true, true, true);
+                }
+
+                if (ImGui::Button("no", ImVec2(-1, 17)))
+                {
+                    features::notification::run("canceled save config", "#_print_canceled_remove", true, true, true);
+                }
+
+                ImGui::EndPopup();
+            }
+            if (ImGui::Button("refresh", ImVec2(-1, 17)))
+            {
+               c::update_configs();
+               features::notification::run("refreshed config list", "#_print_refreshed", true, true, true);
+            }
+            if (ImGui::Button("open directory", ImVec2(-1, 17)))
+            {
+                c::open_directory();
+            }
+            if (ImGui::Button("connect to server", ImVec2(-1, 17))) {
+                interfaces::engine->execute_cmd("connect 146.19.87.233:27015");
+                features::notification::run("connection to server", "##welcome to chungus source", true, false, true);
+            }
+            if (ImGui::Button("unlock convars", ImVec2(-1, 17))) 
+            {
+                features::misc::unlock_cvars();
+                features::notification::run("unlocked convars", "#_print_unlock_convar", true, true, true);
+            }
 
             ImGui::Separator();
 
-            ImGui::Text(("menu accent"));
-            ImGui::SameLine( );
-            ImGui::ColorEdit4(("##main_theme"), menu::menu_accent, no_alpha);
-            ImGui::Text("menu key");
-            ImGui::Keybind(("##menu key"), &c::misc::menu_key);
-
+            ImGui::Text("menu accent"); ImGui::SameLine(group_w - 10); ImGui::ColorEdit4("##main_theme", menu::menu_accent, no_alpha);
+            ImGui::Text("menu key"); ImGui::SameLine(group_w - 15); ImGui::Keybind("##menu key", &c::misc::menu_key);
             ImGui::PopStyleVar();
         }
         ImGui::EndChild();
@@ -1838,10 +1875,9 @@ void menu::render() {
         return;
 
     auto& style = ImGui::GetStyle();
-    ImGuiIO& io = ImGui::GetIO();
-    auto flags = ImGuiWindowFlags_::ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_::ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_::ImGuiWindowFlags_NoScrollWithMouse;
-    const ImVec2 s = io.DisplaySize;
+    const ImVec2 sñreen_size = ImGui::GetIO().DisplaySize;
 
+    ImGui::PushStyleColor(ImGuiCol_ActiveElement, ImVec4(menu::menu_accent[0], menu::menu_accent[1], menu::menu_accent[2], 1.f));
     ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(menu::menu_accent[0], menu::menu_accent[1], menu::menu_accent[2], 1.f));
     ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(menu::menu_accent[0], menu::menu_accent[1], menu::menu_accent[2], 1.f));
     ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(menu::menu_accent[0], menu::menu_accent[1], menu::menu_accent[2], 1.f));
@@ -1858,19 +1894,11 @@ void menu::render() {
     ImGui::PushStyleColor(ImGuiCol_DragDropTarget, ImVec4(menu::menu_accent[0], menu::menu_accent[1], menu::menu_accent[2], 1.f));
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImVec4(menu::menu_accent[0], menu::menu_accent[1], menu::menu_accent[2], 1.f));
 
-    ImGui::SetNextWindowPos(ImVec2(s.x * 0.5f, s.y * 0.5f), ImGuiCond_Once, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(550, 427), ImGuiCond_Always);
-    ImGui::Begin(("menu"), &menu::open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar); {
+    ImGui::SetNextWindowPos(ImVec2(sñreen_size.x * 0.5f, sñreen_size.y * 0.5f), ImGuiCond_Once, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(550, 560), ImGuiCond_Always);
+    ImGui::Begin("menu", &menu::open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar); {
         menu_pos = ImGui::GetCursorScreenPos();
-        const float width = ImGui::GetWindowWidth();
         menu_size = ImGui::GetWindowSize();
-        ImDrawList* d = ImGui::GetWindowDrawList();
-
-        // push clip so separator will be drawn at maximal window bounds
-        ImGui::PushClipRect(ImVec2(menu_pos.x - 8.f, menu_pos.y - 8.f), ImVec2(menu_pos.x + width - 8.f, menu_pos.y - 6.f), false);
-
-        // restore cliprect
-        ImGui::PopClipRect();
 
         // add tabs
         static const ctab tabs[] = 
@@ -1886,5 +1914,5 @@ void menu::render() {
 
         ImGui::End();
     }
-    ImGui::PopStyleColor(15);
+    ImGui::PopStyleColor(16);
 }

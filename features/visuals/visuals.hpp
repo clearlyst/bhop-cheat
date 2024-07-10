@@ -5,6 +5,7 @@
 namespace features::chams {
 	void run(i_mat_render_context* ctx, const draw_model_state_t& state, const model_render_info_t& info, matrix_t* matrix);
 	void run_bt(i_mat_render_context* ctx, const draw_model_state_t& state, const model_render_info_t& info, matrix_t* matrix);
+	void old_shaders();
 	void initialize();
 }
 
@@ -19,9 +20,27 @@ struct bbox_t {
 	}
 };
 
+struct draw_sound {
+	draw_sound(uint32_t guid, float ReceiveTime, float radius, vec3_t origin) {
+		this->m_guid = guid;
+		this->m_iReceiveTime = ReceiveTime;
+		this->radius = radius;
+		this->origin = origin;
+	}
+
+	uint32_t m_guid;
+	float m_iReceiveTime;
+	float radius;
+	float alpha;
+	vec3_t origin;
+};
+
 namespace features::visuals {
 	bool get_player_box(player_t* entity, bbox_t& in);
 	bool get_entity_box(entity_t* entity, bbox_t& in);
+
+	inline CUtlVector <SndInfo_t> m_cursoundlist;
+	inline std::vector<draw_sound> buffer;
 
 	void get_update_sounds();
 
@@ -63,15 +82,6 @@ namespace features::visuals {
 		inline std::vector< std::pair<vec3_t, int> > restore_sound;
 	}
 
-	struct SoundInfo_t {
-		int guid;
-		float soundTime;
-		float alpha;
-		vec3_t soundPos;
-	};
-
-	inline std::map<int, std::vector<SoundInfo_t>> m_sound_list;
-
 	namespace player 
 	{
         inline float player_alpha[65] = { };
@@ -88,6 +98,7 @@ namespace features::visuals {
 		void draw_flags(player_t* entity, bbox_t bbox, color_t color);
 		void draw_bottom_bar(player_t* entity, bbox_t bbox, color_t ammo_bar, color_t health_text, color_t weapon_icon, color_t weapon_text, color_t ammo_text, color_t distance, color_t ammo_bar_outline);
 		void draw_outoffov(player_t* entity, color_t color);
+		void draw_death_history(player_t* entity);
 		void draw_sounds();
 	}
 
@@ -128,8 +139,7 @@ namespace features::visuals {
 	void nosmoke();
 	void draw_scope();
 	void dlights(player_t* entity);
-	void run_freecam(c_usercmd* cmd, vec3_t angles);
-	void freecam(view_setup_t* setup);
+	void free_view(c_usercmd* cmd, vec3_t angles);
 	void motion_blur(view_setup_t* setup);
 	void thirdperson();
 }

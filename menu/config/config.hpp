@@ -5,14 +5,13 @@
 
 namespace c {
 	void create_directory();
+	void open_directory();
 	void update_configs();
 	void create_file(const std::string_view name);
 	void delete_file(const std::size_t index);
 	void save(const std::size_t index);
 	void load(const std::size_t index);
 	inline std::string directory_path_fonts;
-	inline std::string directory_path;
-	inline std::string directory;
 
 	namespace backtrack 
 	{
@@ -92,6 +91,9 @@ namespace c {
 		inline bool ladder_edge_jump = false;
 		inline int ladder_edge_jump_key = 0;
 		inline int ladder_edge_jump_key_s = 1;
+		inline bool auto_fireman = false;
+		inline int auto_fireman_key = 0;
+		inline int auto_fireman_key_s = 1;
 		inline bool adaptive_edge_jump = false;
 		inline bool adaptive_edge_jump_for[3] = { false, false, false };
 		inline bool long_jump = false;
@@ -133,8 +135,6 @@ namespace c {
 
 		namespace indicators
 		{
-			inline int position = 200;
-
 			namespace graphs
 			{
 				inline bool fade = true;
@@ -174,28 +174,51 @@ namespace c {
 
 			namespace velocity
 			{
-				inline bool enable = true;
-				inline bool disable_takeoff_on_ground = true;
-				inline bool takeoff = true;
-				inline bool custom_color = true;
+				inline bool enable = false;
+				inline bool disable_takeoff_on_ground = false;
+				inline bool takeoff = false;
+				inline float maximum_value = 400.0f;
+				inline int style = 0;
 
-				inline float color_1[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
-				inline float color_2[4]{255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
+				namespace hsb_color
+				{
+					inline float saturation = 0.50f;
+				};
 
-				inline float color_3[4]{ 23 / 255.0f, 238 / 255.0f, 103 / 255.0f, 255 / 255.0f };
-				inline float color_4[4]{ 225 / 255.0f, 100 / 255.0f, 100 / 255.0f, 255 / 255.0f };
-				inline float color_5[4]{ 255 / 255.0f, 200 / 255.0f, 100 / 255.0f, 255 / 255.0f };
+				namespace interpolate_color
+				{
+					inline float first[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 0 / 255.0f };
+					inline float second[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
+				};
+
+				namespace delta_color
+				{
+					inline float positive[4]{ 23 / 255.0f, 238 / 255.0f, 103 / 255.0f, 255 / 255.0f };
+					inline float neutral[4]{ 255 / 255.0f, 200 / 255.0f, 100 / 255.0f, 255 / 255.0f };
+					inline float negative[4]{ 225 / 255.0f, 100 / 255.0f, 100 / 255.0f, 255 / 255.0f };
+				};
 			};
 
 			namespace stamina
 			{
-				inline bool enable = true;
-				inline bool takeoff = true;
-				inline bool disable_takeoff_on_ground = true;
-				inline bool custom_color = true;
-				inline float color_1[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
-				inline float color_2[4]{ 255 / 255.0f, 255 / 255.0f, 255 / 255.0f, 255 / 255.0f };
+				inline bool enable = false;
+				inline bool disable_takeoff_on_ground = false;
+				inline bool takeoff = false;
+				inline float maximum_value = 40.0f;
+				inline int style = 0;
+
 				inline float color[4]{ 200 / 255.0f, 200 / 255.0f, 200 / 255.0f, 255 / 255.0f };
+
+				namespace hsb_color
+				{
+					inline float saturation = 0.50f;
+				};
+
+				namespace interpolate_color
+				{
+					inline float first[4]{ 200 / 255.0f, 200 / 255.0f, 200 / 255.0f, 255 / 255.0f };
+					inline float second[4]{ 128 / 255.0f, 255 / 255.0f, 128 / 255.0f, 255 / 255.0f };
+				};
 			};
 
 			namespace keys
@@ -277,8 +300,6 @@ namespace c {
 			{
 				inline bool enable = false;
 				inline bool rainbow_color = false;
-				inline float inactive_color[3]{ 1.f, 1.f, 1.f };
-				inline float active_color[3]{ 1.f, 1.f, 1.f };
 			};
 
 			namespace can_fire
@@ -369,11 +390,6 @@ namespace c {
 		inline float skin_modulation2[3]{ 1.f, 1.f, 1.f };
 		inline float skin_modulation3[3]{ 1.f, 1.f, 1.f };
 		inline float skin_modulation4[3]{ 1.f, 1.f, 1.f };
-
-		inline bool weapon_endable = false;
-		inline int weapons_page = 0;
-		inline int weapons_model = 0;
-
 	}
 
 	namespace visuals 
@@ -574,7 +590,12 @@ namespace c {
 
 			namespace emitted_sound
 			{
-				inline bool enable = true;
+				inline bool enable = false;
+			};
+
+			namespace death_history
+			{
+				inline bool enable = false;
 			};
 
 			namespace dlight
@@ -881,6 +902,7 @@ namespace c {
 		namespace hands
 		{
 			inline bool enable = false;
+			inline bool old_shaders = false;
 			inline bool hide_original_model = false;
 			inline int type = 0;
 			inline float color[4]{ 1.f, 1.f, 1.f, 1.f };

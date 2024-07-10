@@ -17,6 +17,7 @@ void __fastcall sdk::hooks::draw_model_execute::draw_model_execute(void* _this, 
 
 	features::chams::run_bt(ctx, state, info, matrix);
 	features::chams::run(ctx, state, info, matrix);
+	features::chams::old_shaders();
 
 	draw_model_execute_original(_this, edx, ctx, state, info, matrix);
 	interfaces::model_render->override_material(nullptr);

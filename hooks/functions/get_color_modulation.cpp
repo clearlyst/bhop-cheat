@@ -14,6 +14,7 @@ void __fastcall sdk::hooks::get_color_modulation::get_color_modulation(i_materia
 
 	const auto name = material->get_name();
 	const auto group = material->get_texture_group_name();
+	const auto is_model = group == strstr(group, ("Model textures"));
 	const auto is_world = group == strstr(group, ("World textures"));
 	const auto is_sky = group == strstr(group, ("SkyBox textures"));
 	const auto is_prop = group == strstr(group, ("StaticProp textures"));
@@ -38,7 +39,6 @@ void __fastcall sdk::hooks::get_color_modulation::get_color_modulation(i_materia
 		*g *= c::visuals::world::props_modulation::color[1];
 		*b *= c::visuals::world::props_modulation::color[2];
 	} 
-	
 }
 
 bool __stdcall sdk::hooks::is_using_static_prop_debug_modes::is_using_static_prop_debug_modes() {

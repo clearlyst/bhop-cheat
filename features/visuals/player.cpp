@@ -195,11 +195,26 @@ void features::visuals::player::run()
 		return;
 	}
 
+	for (int i = 1; i <= interfaces::globals->max_clients; i++)
+	{
+		auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(i));
+
+		if (!entity || !entity->is_player() || entity == g::local || entity->team() == g::local->team())
+		{
+			continue;
+		}
+
+		if (c::visuals::players::death_history::enable)
+		{
+			draw_death_history(entity);
+		}
+	}
+
 	for (int i = 1; i <= interfaces::globals->max_clients; i++) 
 	{
 		auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(i));
 
-		if (!entity || !entity->is_player() || entity == g::local)
+		if (!entity || !entity->is_player() || entity == g::local || entity->team() == g::local->team())
 		{
 			continue;
 		}
@@ -209,22 +224,15 @@ void features::visuals::player::run()
 		if (c::visuals::players::fade::enable)
 		{
 			if (entity->dormant() || !entity->is_alive())
-				player_alpha[index] = max(player_alpha[index] - interfaces::globals->frame_time * c::visuals::players::fade::time, 0.f);
-			else
-				player_alpha[index] = min(player_alpha[index] + interfaces::globals->frame_time * c::visuals::players::fade::time, 1.f);
-
-			/*
-			
-			entity->dormant() || !entity->is_alive() ? player_alpha[index] -= interfaces::globals->frame_time * c::visuals::players::fade::time : player_alpha[index] += interfaces::globals->frame_time * c::visuals::players::fade::time;
-
-			player_alpha[index] = std::clamp(player_alpha[index], 0.f, 1.f);
-
-			if (player_alpha[index] < 0.1f)
 			{
-				continue;
+				player_alpha[index] = max(player_alpha[index] - interfaces::globals->frame_time * c::visuals::players::fade::time, 0.f);
+			}
+			else
+			{
+				player_alpha[index] = min(player_alpha[index] + interfaces::globals->frame_time * c::visuals::players::fade::time, 1.f);
 			}
 
-			*/
+			player_alpha[index] = std::clamp(player_alpha[index], 0.0f, 1.0f);
 		}
 		else
 		{
@@ -259,11 +267,6 @@ void features::visuals::player::run()
 		color_t ammo_text = c::visuals::players::fade::enable ? color_t(c::visuals::players::colors::ammo_text[0], c::visuals::players::colors::ammo_text[1], c::visuals::players::colors::ammo_text[2], float(player_alpha[index] * c::visuals::players::colors::ammo_text[3])) : color_t(c::visuals::players::colors::ammo_text[0], c::visuals::players::colors::ammo_text[1], c::visuals::players::colors::ammo_text[2], c::visuals::players::colors::ammo_text[3]);
 		color_t out_of_view = c::visuals::players::fade::enable ? color_t(c::visuals::players::colors::out_of_view[0], c::visuals::players::colors::out_of_view[1], c::visuals::players::colors::out_of_view[2], float(player_alpha[index] * c::visuals::players::colors::out_of_view[3])) : color_t(c::visuals::players::colors::out_of_view[0], c::visuals::players::colors::out_of_view[1], c::visuals::players::colors::out_of_view[2], c::visuals::players::colors::out_of_view[3]);
 
-		if (entity->team() == g::local->team())
-		{
-			continue;
-		}
-
 		if (c::visuals::players::engine_radar)
 		{
 			entity->spotted() = true;
@@ -276,7 +279,7 @@ void features::visuals::player::run()
 
 		if (c::visuals::players::emitted_sound::enable)
 		{
-			draw_sounds();
+			get_update_sounds();
 		}
 
 		bbox_t _box;
@@ -843,98 +846,149 @@ void features::visuals::player::draw_outoffov(player_t* entity, color_t color)
 }
 
 void features::visuals::get_update_sounds() {
-	static CUtlVector<SndInfo_t> sounds;
+	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
+		buffer.clear();
 
-	interfaces::engine_sound->GetActiveSounds(sounds);
+	features::visuals::player::draw_sounds();
 
-	if (!sounds.Count())
+	m_cursoundlist.RemoveAll();
+	interfaces::engine_sound->GetActiveSounds(m_cursoundlist);
+
+	if (!m_cursoundlist.Count())
 		return;
 
-	for (int i = 0; i < sounds.Count(); ++i) {
-		const auto& sound = sounds[i];
-
-		if (!sound.m_nSoundSource)
-			continue;
-
-		if (sound.m_nChannel != 4)
-			continue;
+	for (auto i = 0; i < m_cursoundlist.Count(); i++)
+	{
+		auto& sound = m_cursoundlist[i];
 
 		if (!sound.m_bUpdatePositions)
 			continue;
 
-		player_t* player = player_t::get_player_by_index(sound.m_nSoundSource);
-
-		if (!player)
+		if (!sound.m_bFromServer)
 			continue;
 
-		if (player != g::local)
+		if (sound.m_nSoundSource < 1 || sound.m_nSoundSource > 64)
 			continue;
 
-		if (!player->is_alive() || !player->is_player() || player->dormant())
+		auto entity = reinterpret_cast<player_t*>(interfaces::ent_list->get_client_entity(sound.m_nSoundSource));
+
+		if (!entity)
 			continue;
 
-		if (player->team() == g::local->team())
+		if (entity != g::local)
 			continue;
 
-		if (!sound.m_pOrigin)
+		if (!entity->is_alive() || !entity->is_player() || entity->dormant())
 			continue;
 
-		auto& player_sound = m_sound_list[player->index()];
-		if (player_sound.size() > 0) {
-			bool should_break = false;
-			for (const auto& snd : player_sound) {
-				if (snd.guid == sound.m_nGuid) {
-					should_break = true;
-					break;
-				}
-			}
+		if (entity->team() == g::local->team())
+			continue;
 
-			if (should_break)
+		if (!buffer.empty())
+		{
+			bool check = false;
+			for (auto& sound_check : buffer)
+				if (sound_check.m_guid == sound.m_nGuid)
+					check = true;
+
+			if (check)
 				continue;
+
 		}
 
-		auto& new_sound = player_sound.emplace_back();
-		new_sound.guid = sound.m_nGuid;
-		new_sound.soundPos = *sound.m_pOrigin;
-		new_sound.soundTime = interfaces::globals->realtime;
-		new_sound.alpha = 1.0f;
+		if (sound.m_pOrigin->is_zero())
+			continue;
+
+		vec3_t origin;
+		vec3_t src3D, dst3D;
+
+		trace_t trace;
+		trace_filter filter;
+		ray_t ray;
+
+		if (!entity->dormant())
+			src3D = entity->get_absolute_origin() + vec3_t(0.0f, 0.0f, 1.0f);
+		else
+			src3D = *sound.m_pOrigin + vec3_t(0.0f, 0.0f, 1.0f);
+
+		dst3D = src3D - vec3_t(0.0f, 0.0f, 100.0f);
+
+		filter.skip = entity;
+		ray.initialize(src3D, dst3D);
+
+		interfaces::trace_ray->trace_ray(ray, MASK_PLAYERSOLID, &filter, &trace);
+
+		if (trace.allsolid)
+			continue;
+
+		origin = trace.flFraction <= 0.97f ? trace.end : *sound.m_pOrigin;
+
+		int sounds_radius;
+
+		buffer.emplace_back(draw_sound(sound.m_nGuid, interfaces::globals->realtime, sounds_radius, origin));
 	}
 }
 
 void features::visuals::player::draw_sounds() {
-	for (auto& [entIndex, sound] : m_sound_list) {
+	if (buffer.empty())
+		return;
 
-		if (sound.empty())
-			continue;
+	for (auto i = 0; i < buffer.size(); ++i)
+	{
+		auto& circle = buffer.at(i); //-V831
 
-		for (auto& info : sound) {
-			if (info.soundTime + 0.30f < interfaces::globals->realtime)
-				info.alpha -= interfaces::globals->frame_time * 1.0f;
+		auto procent = 1.0f - (((circle.m_iReceiveTime + 2.0f) - interfaces::globals->realtime) / 2.0f);
 
-			if (info.alpha <= 0.0f)
-				continue;
-
-			float delta_time = interfaces::globals->realtime - info.soundTime;
-
-			auto factor = delta_time / 0.30f;
-
-			if (factor > 1.0f)
-				factor = 1.0f;
-
-			float radius = 30.0f * factor;
-
-			im_render.circle_filled_3d(info.soundPos, radius, color_t(c::visuals::players::colors::sounds[0], c::visuals::players::colors::sounds[1], c::visuals::players::colors::sounds[2], info.alpha));
-		}
-
-		while (!sound.empty())
+		if (procent <= 1)
 		{
-			auto& back = sound.back();
+			auto radius = circle.radius + (2.0f * (circle.radius * procent));
 
-			if (back.alpha <= 0.0f)
-				sound.pop_back();
-			else 
-				break;
+			im_render.circle_filled_3d(circle.origin, radius, color_t(c::visuals::players::colors::sounds[0], c::visuals::players::colors::sounds[1], c::visuals::players::colors::sounds[2], c::visuals::players::colors::sounds[3] * (1.0f - procent)));
+			im_render.circle_filled_3d(circle.origin, radius, color_t(c::visuals::players::colors::sounds[0], c::visuals::players::colors::sounds[1], c::visuals::players::colors::sounds[2], (c::visuals::players::colors::sounds[3] * (1.0f - procent)) * 0.75f));
 		}
+		else
+		{
+			buffer.erase(buffer.begin() + i);
+
+			if (i > 0)
+				--i;
+
+			continue;
+		}
+	}
+}
+
+void features::visuals::player::draw_death_history(player_t* entity)
+{
+	if (entity->is_alive())
+	{
+		return;
+	}
+
+	if (entity->dormant())
+	{
+		return;
+	}
+
+	bool check_on_see = g::local->can_see_player_pos(entity, entity->get_eye_pos());
+
+	if (!check_on_see)
+	{
+		return;
+	}
+
+	player_info_t info;
+	interfaces::engine->get_player_info(entity->index(), &info);
+
+	vec3_t previous_screen_position;
+	vec3_t screen_position;
+	vec3_t get_head_position = entity->get_bone_position(8);
+	ImVec2 size = im_render.measure_text(info.name, fonts::esp_font, c::fonts::esp_size);
+
+	if (interfaces::debug_overlay->world_to_screen(get_head_position, screen_position))
+	{
+		im_render.drawrectfilled(screen_position.x - 4, screen_position.y - 4, 4, 4, color_t(0, 255, 0, 255));
+		im_render.text(screen_position.x + 5, screen_position.y, c::fonts::esp_size, fonts::esp_font, info.name, true, color_t(255, 255, 255, 255), c::fonts::esp_flag[9], c::fonts::esp_flag[10]);
 	}
 }
 

@@ -338,7 +338,7 @@ void features::visuals::dlights(player_t* entity)
 	elight->direction = getheadorig;
 	elight->origin = getheadorig;
 	elight->radius = c::visuals::players::dlight::radius;
-	elight->die_time = interfaces::globals->cur_time + 0.1f;
+	elight->die_time = interfaces::globals->cur_time;
 	elight->decay = 50.0f;		
 	elight->key = entity->index();
 
@@ -350,117 +350,83 @@ void features::visuals::dlights(player_t* entity)
 	dlight->direction = getorig;
 	dlight->origin = getorig;
 	dlight->radius = c::visuals::players::dlight::radius / 2;
-	dlight->die_time = interfaces::globals->cur_time + 0.1f;
+	dlight->die_time = interfaces::globals->cur_time;
 	dlight->decay = dlight->radius / 2.f;		
 	dlight->key = entity->index();
 }
 
-static int buttons = 0;
+void features::visuals::free_view(c_usercmd* cmd, vec3_t angles) {
 
-void features::visuals::run_freecam(c_usercmd* cmd, vec3_t angles) {
-	static vec3_t currentviewangles = vec3_t{};
-	static vec3_t realviewangles = vec3_t{};
-	static bool wascrouching = false;
-	static bool washoldingattack = false;
-	static bool washoldinguse = false;
-	static bool hassetangles = false;
-	buttons = cmd->buttons;
-
-	if (!c::misc::freecam || !menu::checkkey(c::misc::freecam_key, c::misc::freecam_key_s)) {
-		if (hassetangles) {
-			interfaces::engine->set_view_angles(realviewangles);
-			cmd->view_angles = currentviewangles;
-			if (wascrouching)
-				cmd->buttons |= in_duck;
-			if (washoldingattack)
-				cmd->buttons |= in_attack;
-			if (washoldinguse)
-				cmd->buttons |= in_use;
-			wascrouching = false;
-			washoldingattack = false;
-			washoldinguse = false;
-			hassetangles = false;
-		}
-		currentviewangles = vec3_t{};
+	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
+	{
 		return;
 	}
 
 	if (!g::local || !g::local->is_alive())
+	{
 		return;
+	}
 
-	if (currentviewangles.null()) {
-		currentviewangles = cmd->view_angles;
-		realviewangles = angles;
-		wascrouching = cmd->buttons & in_duck;
+	struct view_data_t
+	{
+		vec3_t current, real = vec3_t{};
+		bool crouching, holding_attack, holding_use = false;
+	};
+
+	static bool should_view_changes = false;
+	static view_data_t currect_view;
+
+	if (!c::misc::freecam || !menu::checkkey(c::misc::freecam_key, c::misc::freecam_key_s))
+	{
+		if (should_view_changes)
+		{
+			interfaces::engine->set_view_angles(currect_view.real);
+
+			cmd->view_angles = currect_view.current;
+
+			if (currect_view.crouching)
+				cmd->buttons |= in_duck;
+
+			if (currect_view.holding_attack)
+				cmd->buttons |= in_attack;
+
+			if (currect_view.holding_use)
+				cmd->buttons |= in_use;
+
+			currect_view.crouching = false;
+			currect_view.holding_attack = false;
+			currect_view.holding_use = false;
+
+			should_view_changes = false;
+		}
+
+		currect_view.current = vec3_t{};
+
+		return;
+	}
+
+	if (currect_view.current.null())
+	{
+		currect_view.current = cmd->view_angles;
+		currect_view.real = angles;
+		currect_view.crouching = cmd->buttons & in_duck;
 	}
 
 	cmd->forward_move = 0;
 	cmd->side_move = 0;
 	cmd->buttons = 0;
 
-	if (wascrouching)
+	if (currect_view.crouching)
 		cmd->buttons |= in_duck;
 
-	if (washoldingattack)
+	if (currect_view.holding_attack)
 		cmd->buttons |= in_attack;
 
-	if (washoldinguse)
+	if (currect_view.holding_use)
 		cmd->buttons |= in_use;
 
-	cmd->view_angles = currentviewangles;
-	hassetangles = true;
-}
-
-void features::visuals::freecam(view_setup_t* setup) {
-	static vec3_t origin = vec3_t{ };
-
-	if (!c::misc::freecam || !GetAsyncKeyState(c::misc::freecam_key)) {
-		origin = vec3_t{ };
-		return;
-	}
-
-	if (!g::local || !g::local->is_alive())
-		return;
-
-	float cam_speed = fabsf(static_cast<float>(2)); // cfg later 
-
-	if (origin.null())
-		origin = setup->origin;
-
-	vec3_t forward{ }, right{ }, up{ };
-
-	math::angle_vectors_alternative(setup->view, &forward, &right, &up);
-
-	const bool inback = buttons & in_back;
-	const bool inforward = buttons & in_forward;
-	const bool rightBtn = buttons & in_moveright;
-	const bool inleft = buttons & in_moveleft;
-	const bool inshift = buttons & in_speed;
-	const bool induck = buttons & in_duck;
-	const bool injump = buttons & in_jump;
-
-	if (induck)
-		cam_speed *= 0.45f;
-
-	if (inshift)
-		cam_speed *= 1.65f;
-
-	if (inforward)
-		origin += forward * cam_speed;
-
-	if (rightBtn)
-		origin += right * cam_speed;
-
-	if (inleft)
-		origin -= right * cam_speed;
-
-	if (inback)
-		origin -= forward * cam_speed;
-
-	if (injump)
-		origin += up * cam_speed;
-
-	setup->origin = origin;
+	cmd->view_angles = currect_view.current;
+	should_view_changes = true;
 }
 
 void draw_screen_effect(i_material* material) {

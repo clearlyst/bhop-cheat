@@ -35,6 +35,7 @@ namespace features::movement
 	void edge_jump(c_usercmd* cmd);
 	void long_jump(c_usercmd* cmd );
 	void ladder_jump(c_usercmd* cmd);
+	void auto_fireman(c_usercmd* cmd);
 	void null_strafing(c_usercmd* cmd);
 	void mini_jump(c_usercmd* cmd);
 	void auto_strafe(c_usercmd* cmd, vec3_t& current_angle);

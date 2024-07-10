@@ -4,6 +4,7 @@
 #include "../../menu/config/config.hpp"
 #include "../movement/prediction/prediction.hpp"
 #include "../notifications/notifications.hpp"
+#include <imgui/imgui_internal.h>
 
 void features::movement::bhop(c_usercmd* cmd) 
 {
@@ -358,6 +359,71 @@ void features::movement::ladder_jump(c_usercmd* cmd)
 
 		should[9] = false;
 	}
+}
+
+void features::movement::auto_fireman(c_usercmd* cmd)
+{
+	if (!c::movement::auto_fireman || !menu::checkkey(c::movement::auto_fireman_key, c::movement::auto_fireman_key_s))
+	{
+		return;
+	}
+
+	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
+	{
+		return;
+	}
+
+	if (!g::local || !g::local->is_alive())
+	{
+		return;
+	}
+
+	if (g::local->move_type() == movetype_noclip || g::local->move_type() == movetype_observer)
+	{
+		return;
+	}
+
+	if (g::local->flags() & fl_onground)
+	{
+		return;
+	}
+
+	prediction::start(cmd);
+
+	if (g::local->move_type() != movetype_ladder && prediction::movetype == movetype_ladder)
+	{
+		if (c::movement::adaptive_key_cancelling && c::movement::adaptive_key_for[3])
+		{
+			if (c::movement::lj_null[0])
+			{
+				cmd->buttons &= ~in_forward;
+				interfaces::engine->execute_cmd(xs("-forward"));
+			}
+
+			if (c::movement::lj_null[1])
+			{
+				cmd->buttons &= ~in_back;
+				interfaces::engine->execute_cmd(xs("-back"));
+			}
+
+			if (c::movement::lj_null[2])
+			{
+				cmd->buttons &= ~in_moveleft;
+				interfaces::engine->execute_cmd(xs("-moveleft"));
+			}
+
+			if (c::movement::lj_null[3])
+			{
+				cmd->buttons &= ~in_moveright;
+				interfaces::engine->execute_cmd(xs("-moveright"));
+			}
+		}
+
+		cmd->buttons |= in_jump;
+		cmd->buttons |= in_duck;
+	}
+
+	prediction::stop();
 }
 
 void features::movement::null_strafing(c_usercmd* cmd) 
@@ -805,223 +871,62 @@ bool features::movement::advanced_detection_for_edgebug(c_usercmd* cmd)
 
 void features::movement::edge_bug(c_usercmd* cmd)
 {
-	struct edgebug_data {
-		bool crouch;
-		bool strafe;
-		float forwardmove;
-		float sidemove;
-		float viewangle;
-		int ticks_left;
-	} detect_data{};
 
-	if (!c::movement::edge_bug || !menu::checkkey(c::movement::edge_bug_key, c::movement::edge_bug_key_s))
-	{
-		detect_data.ticks_left = 0;
-		return;
-	}
-
-	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
-	{
-		detect_data.ticks_left = 0;
-		return;
-	}
-
-	if (!g::local || !g::local->is_alive())
-	{
-		detect_data.ticks_left = 0;
-		return;
-	}
-
-	if (g::local->move_type() == movetype_noclip || g::local->move_type() == movetype_ladder || g::local->move_type() == movetype_observer)
-	{
-		detect_data.ticks_left = 0;
-		return;
-	}
-
-	const float m_yaw = interfaces::console->get_convar("m_yaw")->get_float();
-	const float sensitivity = interfaces::console->get_convar("sensitivity")->get_float();
-	float yaw_delta = std::clamp(cmd->mouse_dx * m_yaw * sensitivity, -30.f, 30.f);
-	float original_forwardmove = cmd->forward_move;
-	float original_sidemove = cmd->side_move;
-	float original_yaw = cmd->view_angles.y;
-	detect_data.viewangle = original_yaw;
-	bool detected_edgebug = false;
-
-	if (!detect_data.ticks_left) {
-		for (int type = 0; type < (c::movement::edge_bug_asisst ? 4 : 2); type++)
-		{
-			c_usercmd predictcmd = *cmd;
-
-			if (type == 0)
-			{
-				detect_data.crouch = true;
-				predictcmd.buttons |= in_duck;
-				detect_data.strafe = false;
-				predictcmd.forward_move = 0.f;
-				predictcmd.side_move = 0.f;
-			}
-			else if (type == 1)
-			{
-				detect_data.crouch = false;
-				predictcmd.buttons &= ~in_duck;
-				detect_data.strafe = false;
-				predictcmd.forward_move = 0.f;
-				predictcmd.side_move = 0.f;
-			}
-			else if (type == 2)
-			{
-				detect_data.crouch = true;
-				predictcmd.buttons |= in_duck;
-				detect_data.strafe = true;
-				predictcmd.forward_move = original_forwardmove;
-				predictcmd.side_move = original_sidemove;
-			}
-			else if (type == 3)
-			{
-				detect_data.crouch = false;
-				predictcmd.buttons &= ~in_duck;
-				detect_data.strafe = true;
-				predictcmd.forward_move = original_forwardmove;
-				predictcmd.side_move = original_sidemove;
-			}
-
-			prediction::restore_ent_to_predicted_frame(interfaces::prediction->m_nCommandsPredicted() - 1);
-
-			for (int ticks = 0; ticks < time_to_ticks(c::movement::edge_bug_time); ticks++)
-			{
-				prediction::start(&predictcmd);
-				detected_edgebug = advanced_detection_for_edgebug(&predictcmd);
-				prediction::stop();
-
-				if (g::local->flags() & fl_onground || g::local->velocity().z > 0.f || g::local->velocity().length_2d() == 0.f || g::local->move_type() == movetype_ladder)
-					break;
-
-				if (detected_edgebug) {
-					detect_data.ticks_left = ticks;
-					detect_data.forwardmove = predictcmd.forward_move;
-					detect_data.sidemove = predictcmd.side_move;
-					break;
-				}
-			}
-
-			if (detect_data.ticks_left)
-				break;
-		}
-	}
-
-	if (detect_data.ticks_left) {
-		if (detect_data.ticks_left == 1) {
-			if (c::movement::detection_printf[1]) {
-				features::notification::run("done edgebug", "#_print_edgebug", true, true, true);
-			}
-		}
-
-		if (detect_data.crouch) {
-			cmd->buttons |= in_duck;
-		}
-		else {
-			cmd->buttons &= ~in_duck;
-		}
-
-		if (detect_data.strafe) {
-			cmd->forward_move = detect_data.forwardmove;
-			cmd->side_move = detect_data.sidemove;
-		}
-		else {
-			cmd->forward_move = 0.f;
-			cmd->side_move = 0.f;
-		}
-
-		detect_data.ticks_left--;
-	}
 }
 
 void features::movement::auto_align(c_usercmd* cmd)
 {
-	if (!c::movement::auto_align)
-	{
-		return;
-	}
 
-	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
-	{
-		return;
-	}
-
-	if (!g::local || !g::local->is_alive())
-	{
-		return;
-	}
-
-	if (g::local->move_type() == movetype_noclip || g::local->move_type() == movetype_ladder || g::local->move_type() == movetype_observer)
-	{
-		return;
-	}
-
-	if (g::local->flags() & fl_onground)
-	{
-		return;
-	}
-
-	trace_t trace;
-	ray_t ray;
-
-	trace_world_only flt;
-
-	const auto mins = g::local->collideable()->mins();
-	const auto maxs = g::local->collideable()->maxs();
-
-	for (float a = 0.0f; a < (m_pi * 2.0f); a += (m_pi * 2.0f) / 32.0f)
-	{
-	
-	}
 }
 
 void features::movement::auto_pixelsurf(c_usercmd* cmd)
 {
-	if (!c::movement::pixel_surf || !menu::checkkey(c::movement::pixel_surf_key, c::movement::pixel_surf_key_s))
-	{
-		return;
+
+}
+
+bool element_is_hovering(const ImVec2& min, const ImVec2& max)
+{
+	const auto mouse_pos = ImGui::GetIO().MousePos;
+
+	return mouse_pos.x >= min.x && mouse_pos.y >= min.y && mouse_pos.x <= max.x && mouse_pos.y <= max.y;
+}
+
+ImVec2 movying_element_position(ImVec2 drag_area_size, bool draw_center_line)
+{
+	static ImVec2 old_mouse_position{ };
+	static ImVec2 position = { ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2 };
+	ImVec2 current_mouse_position = ImGui::GetIO().MousePos;
+
+	static bool start_dragging = false;
+	const bool hovering_drag_area = element_is_hovering(position, position + ImVec2(drag_area_size.x, drag_area_size.y)) && menu::open;
+
+	ImVec2 delta = start_dragging ? current_mouse_position - old_mouse_position : ImVec2(0, 0);
+
+	if (hovering_drag_area && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+		start_dragging = true;
+	}
+	else if (start_dragging) {
+		if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+			position += delta;
+		}
+		else {
+			start_dragging = false;
+		}
 	}
 
-	if (!interfaces::engine->is_in_game() || !interfaces::engine->is_connected())
-	{
-		return;
+	if (start_dragging) {
+		old_mouse_position = current_mouse_position;
+
+		if (draw_center_line)
+		{
+			im_render.drawline(0, ImGui::GetIO().DisplaySize.y / 2, ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y / 2, color_t(255, 255, 255), 1.0f);
+			im_render.drawline(ImGui::GetIO().DisplaySize.x / 2, 0, ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y, color_t(255, 255, 255), 1.0f);
+		}
 	}
 
-	if (!g::local || !g::local->is_alive())
-	{
-		return;
-	}
+	position = ImClamp(position, ImVec2(ImGui::GetIO().DisplaySize.x / 2, 0.f), ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y - drag_area_size.y));
 
-	if (g::local->move_type() == movetype_noclip || g::local->move_type() == movetype_ladder || g::local->move_type() == movetype_observer)
-	{
-		return;
-	}
-
-	// surf types 
-	// FL_IN_AIR_STAND                    256
-	// FL_IN_AIR_CROUCHED                 262
-
-	if ((g::local->flags() & fl_onground) || (prediction::flags & fl_onground))
-	{
-		return;
-	}
-
-	if (ps_data.pixelsurfing) 
-		cmd->buttons |= in_duck;
-	else
-		cmd->buttons &= ~in_duck;
-
-	if (g::local->velocity().z == -6.25f && prediction::velocity.z == -6.25f)
-	{
-		ps_data.pixelsurfing = true;
-	}
-	else
-	{
-		ps_data.pixelsurfing = false;
-	}
-	
+	return position;
 }
 
 color_t interpolate(const color_t& first_color, const color_t& second_color, const float time)
@@ -1107,31 +1012,45 @@ void features::movement::velocity_indicator( )
 		take_off_time = interfaces::globals->cur_time + (c::movement::indicators::velocity::disable_takeoff_on_ground ? 0.0f : 3.5f);
 	}
 
-	auto velocity_color = [](int velocity) -> color_t
+	float get_velocity_factor = std::clamp(float(current_speed) / c::movement::indicators::velocity::maximum_value, 0.0f, 1.0f);
+
+	auto delta_velocity_color = [](int velocity) -> color_t
 	{
 		if (velocity > 0)
 		{
-			return color_t(c::movement::indicators::velocity::color_3[0], c::movement::indicators::velocity::color_3[1], c::movement::indicators::velocity::color_3[2], c::movement::indicators::velocity::color_3[3]);
+			return color_t(c::movement::indicators::velocity::delta_color::positive[0], c::movement::indicators::velocity::delta_color::positive[1], c::movement::indicators::velocity::delta_color::positive[2], c::movement::indicators::velocity::delta_color::positive[3]);
 		}
 		else if (velocity < 0)
 		{
-			return color_t(c::movement::indicators::velocity::color_4[0], c::movement::indicators::velocity::color_4[1], c::movement::indicators::velocity::color_4[2], c::movement::indicators::velocity::color_4[3]);
+			return color_t(c::movement::indicators::velocity::delta_color::negative[0], c::movement::indicators::velocity::delta_color::negative[1], c::movement::indicators::velocity::delta_color::negative[2], c::movement::indicators::velocity::delta_color::negative[3]);
 		}
 		else if (velocity > -1 && velocity < 1)
 		{
-			return color_t(c::movement::indicators::velocity::color_5[0], c::movement::indicators::velocity::color_5[1], c::movement::indicators::velocity::color_5[2], c::movement::indicators::velocity::color_5[3]);
+			return color_t(c::movement::indicators::velocity::delta_color::neutral[0], c::movement::indicators::velocity::delta_color::neutral[1], c::movement::indicators::velocity::delta_color::neutral[2], c::movement::indicators::velocity::delta_color::neutral[3]);
 		}
 	};
 
-	float max_velocity = 300.0f;
-	float interpolation_factor = std::clamp(float(current_speed) / max_velocity, 0.0f, 1.0f);
+	color_t interpolation_color = interpolate(color_t(c::movement::indicators::velocity::interpolate_color::first[0], c::movement::indicators::velocity::interpolate_color::first[1], c::movement::indicators::velocity::interpolate_color::first[2], c::movement::indicators::velocity::interpolate_color::first[3]), color_t(c::movement::indicators::velocity::interpolate_color::second[0], c::movement::indicators::velocity::interpolate_color::second[1], c::movement::indicators::velocity::interpolate_color::second[2], c::movement::indicators::velocity::interpolate_color::second[3]), get_velocity_factor);
+	color_t hue_saturation_brightness_alpha_color = hsb(get_velocity_factor, c::movement::indicators::velocity::hsb_color::saturation, 1.0f, 1.0f);
 
-	color_t color_1 = color_t(c::movement::indicators::velocity::color_1[0], c::movement::indicators::velocity::color_1[1], c::movement::indicators::velocity::color_1[2], c::movement::indicators::velocity::color_1[3]);
-	color_t color_2 = color_t(c::movement::indicators::velocity::color_2[0], c::movement::indicators::velocity::color_2[1], c::movement::indicators::velocity::color_2[2], c::movement::indicators::velocity::color_2[3]);
+	color_t selection_color;
+
+	switch (c::movement::indicators::velocity::style)
+	{
+	case 0: 
+		selection_color = delta_velocity_color(last_delta);
+		break;
+	case 1:
+		selection_color = interpolation_color;
+		break;
+	case 2:
+		selection_color = hue_saturation_brightness_alpha_color;
+		break;
+	}
 
 	last_delta = current_speed - last_speed;
 
-	const auto should_draw_takeoff = (!current_onground || (take_off_time > interfaces::globals->cur_time)) && c::movement::indicators::velocity::takeoff;
+	const bool should_draw_takeoff = (!current_onground || (take_off_time > interfaces::globals->cur_time)) && c::movement::indicators::velocity::takeoff;
 
 	std::string place_holder_velocity = std::to_string(current_speed);
 
@@ -1144,7 +1063,9 @@ void features::movement::velocity_indicator( )
 		place_holder_velocity += " (" + std::to_string(last_jump_speed) + ")";
 	}
 
-	im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position, c::fonts::indi_size, fonts::indicator_font, place_holder_velocity.c_str(), true, c::movement::indicators::velocity::custom_color ? interpolate(color_1, color_2, interpolation_factor) : velocity_color(last_delta), c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+	ImVec2 position = movying_element_position(ImVec2(50, 50), true);
+
+	im_render.text(position.x, position.y, c::fonts::indi_size, fonts::indicator_font, place_holder_velocity.c_str(), true, selection_color, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 
 	if (std::fabs(interfaces::globals->tick_count - last_update) > 5)
 	{
@@ -1206,14 +1127,29 @@ void features::movement::stamina_indicator( )
 		str += " (" + value_str2 + ")";
 	}
 
-	static float time = 0.f;
-	time = 1.f * (float(g::local->stamina()) / 35.f);
+	float get_stamina_factor = std::clamp(float(current_speed) / c::movement::indicators::stamina::maximum_value, 0.0f, 1.0f);
+	color_t static_color = color_t(c::movement::indicators::stamina::color[0], c::movement::indicators::stamina::color[1], c::movement::indicators::stamina::color[2], c::movement::indicators::stamina::color[3]);
+	color_t interpolation_color = interpolate(color_t(c::movement::indicators::stamina::interpolate_color::first[0], c::movement::indicators::stamina::interpolate_color::first[1], c::movement::indicators::stamina::interpolate_color::first[2], c::movement::indicators::stamina::interpolate_color::first[3]), color_t(c::movement::indicators::stamina::interpolate_color::second[0], c::movement::indicators::stamina::interpolate_color::second[1], c::movement::indicators::stamina::interpolate_color::second[2], c::movement::indicators::stamina::interpolate_color::second[3]), get_stamina_factor);
+	color_t hue_saturation_brightness_alpha_color = hsb(get_stamina_factor, c::movement::indicators::stamina::hsb_color::saturation, 1.0f, 1.0f);
 
-	color_t color = color_t(c::movement::indicators::stamina::color[0], c::movement::indicators::stamina::color[1], c::movement::indicators::stamina::color[2], c::movement::indicators::stamina::color[3]);
-	color_t color_1 = color_t(c::movement::indicators::stamina::color_1[0], c::movement::indicators::stamina::color_1[1], c::movement::indicators::stamina::color_1[2], c::movement::indicators::stamina::color_1[3]);
-	color_t color_2 = color_t(c::movement::indicators::stamina::color_2[0], c::movement::indicators::stamina::color_2[1], c::movement::indicators::stamina::color_2[2], c::movement::indicators::stamina::color_2[3]);
+	color_t selection_color;
 
-	im_render.text(g::width / 2, c::movement::indicators::velocity::enable ? (g::height / 2) + c::movement::indicators::position + c::fonts::indi_size : (g::height / 2) + c::movement::indicators::position, c::fonts::indi_size, fonts::indicator_font, str.c_str(), true, c::movement::indicators::stamina::custom_color ? interpolate(color_1, color_2, time) : color, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+	switch (c::movement::indicators::stamina::style)
+	{
+	case 0:
+		selection_color = static_color;
+		break;
+	case 1:
+		selection_color = interpolation_color;
+		break;
+	case 2:
+		selection_color = hue_saturation_brightness_alpha_color;
+		break;
+	}
+
+	ImVec2 position = movying_element_position(ImVec2(50, 50), true);
+
+	im_render.text(position.x, position.y + c::fonts::indi_size + 5, c::fonts::indi_size, fonts::indicator_font, str.c_str(), true, selection_color, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 
 	if (interfaces::globals->tick_count > last_update)
 	{
@@ -1498,6 +1434,8 @@ void features::movement::indicators()
 		add("null", c::movement::null_strafing, color_t(c::movement::indicators::binds::color[0], c::movement::indicators::binds::color[1], c::movement::indicators::binds::color[2]));
 	}
 
+	ImVec2 main_position = movying_element_position(ImVec2(50, 50), true);
+
 	int position = 0;
 
 	for (const auto& [name, data] : indicators_data)
@@ -1508,16 +1446,16 @@ void features::movement::indicators()
 			{
 				if (c::movement::indicators::velocity::enable && c::movement::indicators::stamina::enable)
 				{
-					im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + (c::fonts::indi_size * 2) + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+					im_render.text(main_position.x, main_position.y + ((c::fonts::indi_size + 5) * 2) + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 				}
 				else
 				{
-					im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + c::fonts::indi_size + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+					im_render.text(main_position.x, main_position.y + c::fonts::indi_size + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 				}
 			}
 			else
 			{
-				im_render.text(g::width / 2, (g::height / 2) + c::movement::indicators::position + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
+				im_render.text(main_position.x, main_position.y + position, c::fonts::indi_size, fonts::indicator_font, name, true, data, c::fonts::indi_font_flag[9], c::fonts::indi_font_flag[10]);
 			}
 
 			position += c::fonts::indi_size + c::movement::indicators::binds::sameline;
@@ -1568,7 +1506,9 @@ void features::movement::graphs_data()
 		stamina_data.pop_back();
 	}
 
-	graph_position = ImVec2(g::width / 2 + 255 * (c::movement::indicators::graphs::size / 2.f), (g::height / 2 + c::movement::indicators::position) - (c::fonts::indi_size + 5));
+	ImVec2 position = movying_element_position(ImVec2(50, 50), true);
+
+	graph_position = ImVec2(position.x + 255 * (c::movement::indicators::graphs::size / 2.f), position.y - c::fonts::indi_size);
 
 	velocity_data_t current_velocity_data;
 	stamina_data_t current_stamina_data;

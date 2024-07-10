@@ -35,6 +35,7 @@ namespace features::misc
 	void spread_circle();
 	void big_scene_indicators();
 	void preserve_killfeed();
+	void draw_beam(vec3_t vecSource, vec3_t vecEnd, color_t color);
 	void penetration_crosshair();
 	void unlock_cvars();
 

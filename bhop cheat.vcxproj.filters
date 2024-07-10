@@ -168,9 +168,6 @@
     <ClCompile Include="features\aimbot\backtrack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="features\visuals\player.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="features\visuals\glow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -220,6 +217,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="hooks\functions\get_vcollide.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="features\visuals\player.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
